@@ -40,12 +40,14 @@ $ ./xfs-interface
 Within the XFS interface program, type in the following commands at the prompt.
 
 ```
-# load --init ~/expos-roadmap/expl_progs/squares.xsm
-# load --int=10 ~/expos-roadmap/spl_progs/haltprog.xsm
-# load --exhandler ~/expos-roadmap/spl_progs/haltprog.xsm
-# load --os ~/expos-roadmap/spl_progs/os_startup.xsm
+# load --init $HOME/expos-roadmap/expl_progs/squares.xsm
+# load --int=10 $HOME/expos-roadmap/spl_progs/haltprog.xsm
+# load --exhandler $HOME/expos-roadmap/spl_progs/haltprog.xsm
+# load --os $HOME/expos-roadmap/spl_progs/os_startup.xsm
 # exit
 ```
+
+`~` doesn't work within the XFS interface program and so `$HOME` has to be used.
 
 ## Running XSM Machine
 
