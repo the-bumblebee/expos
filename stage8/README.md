@@ -1,20 +1,24 @@
-# Stage 6: Running a User Program
+# Stage 8: Handling Timer Interrupt
 
-In this stage, we will rewrite the user program and the OS startup ccording to the expos ABI.
+In this stage, we will write a timer interrupt routine and load it into memory.
 
 ## Files Included
 
 ### 1. expl_progs/squares.xsm
 
-This program is rewritten to include an 8 word header before the first instruction. Hence, the first instruction is loaded into memory address 2056. The entry point address is specified by the second word in the header. The library code is loaded into pages 0 and 1 of every user program. Library code is not part of the user program. Pages 2 and 3 are allocated for heap. Pages 4 to 7 are allocated for user program code. Pages 8 and 9 are allocated for the stack.
+A program to print squares of first 6 natural numbers. (Remains unchanged as in stage 7)
 
 ### 2. spl_progs/haltprog.spl
 
-This spl program has only a "halt" statement and will be used as the interrupt handler 10 and also the exception handler. At the end of the user program, an INT 10 instruction is used to give control back to the os and invoke software interrupt handler 10. An exception handler routine is required when the machine encounters unexpected events within the user program. The default action is to halt the machine. (Remains unchanged as in stage 6)
+A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stage 6-7)
 
-### 3. spl_progs/os_startup.spl
+### 3. spl_progs/sample_timer.spl
 
-This is the startup code and it is rewritten to load the library code and also set up the page table to include 10 logical pages.
+A program to be used as timer interrupt routine. Prints "TIMER" to the console on interrupt.
+
+### 4. spl_progs/os_startup.spl
+
+The startup code is modified to load the the timer interrupt routine from disk to memory.
 
 ## Compiling SPL Programs
 
@@ -24,9 +28,10 @@ It is assumed that both the eXpOS package and this repository are set up at home
 $ cd ~/myexpos/spl/
 $ ./spl ~/expos-roadmap/spl_progs/haltprog.spl
 $ ./spl ~/expos-roadmap/spl_progs/os_startup.spl
+$ ./spl ~/expos-roadmap/spl_progs/sample_timer.spl
 ```
 
-This will generate corresponding xsm files:`haltprog.xsm` and `os_startup.xsm`.
+This will generate corresponding xsm files:`haltprog.xsm`, `os_startup.xsm`, and `sample_timer.xsm`.
 
 ## Loading Programs to Disk
 
@@ -45,6 +50,7 @@ Within the XFS interface program, type in the following commands at the prompt.
 # load --exhandler $HOME/expos-roadmap/spl_progs/haltprog.xsm
 # load --os $HOME/expos-roadmap/spl_progs/os_startup.xsm
 # load --library $HOME/myexpos/expl/library.lib
+# load --int=timer $HOME/expos-roadmap/spl_progs/sample_timer.xsm
 # exit
 ```
 
@@ -52,14 +58,14 @@ Within the XFS interface program, type in the following commands at the prompt.
 
 ## Running XSM Machine
 
-Running the machine in debug mode with timer off.
+Running the machine in debug mode with timer enabled.
 
 ```
 $ cd ~/myexpos/xsm/
-$ ./xsm --debug --timer 0
+$ ./xsm --timer 2
 ```
 
-During each iteration use `r` command in debug mode to see the values of R0 and R1, with R1 having the sqaure of the number in R0. USe `c` to conitnue execution till next breakpoint.
+The timer interrupts after every 2 instructions and the timer interrupt routine is executed.
 
 ## Explanation
 
@@ -75,6 +81,7 @@ The files are loaded into the following disk blocks.
 | ... | ... |
 | 13 - 14 | Expos Library |
 | 15 - 16 | Exception Handler |
+| 17 - 18 | Timer Interrupt Routine |
 | ... | ... |
 | 35 - 36 | Interrupt 10 Routine: Exit |
 | ... | ... |
@@ -88,6 +95,7 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 | 0 | ROM Code |
 | 1 | Page for OS startup code |
 | 2 - 3 | Exception Handler |
+| 4 - 5 | Timer Interrupt Routine |
 | ... | ... |
 | 22 - 23 | Interrupt 10 Routine: Exit |
 | ... | ... |
@@ -97,7 +105,7 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 
 The OS startup program loads the disk blocks to their corresponding page numbers.
 
-### 3. Page Table for INIT Program
+### 3. Page Table for INIT Program (Same as stage 7)
 
 PTBR is set to PAGE_TABLE_BASE and PTLR to 10 (2 pages for library, 2 for heap, 4 for code, 2 for stack). The page table is then set as follows.
 
