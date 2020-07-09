@@ -10,7 +10,7 @@ This is the user program that we wish to run, which calculates the sqaures of th
 
 ### 2. spl_progs/haltprog.spl
 
-This spl program has only a "halt" statement and will be used as the interrupt handler 10 and also the exception handler. At the end of the user program, an INT 10 instruction is used to give control back to the os and invokes software interrupt handler 10. An exception handler routine is required when the machine encounter unexpected events within the user program. The default action is to halt the machine.
+This spl program has only a "halt" statement and will be used as the interrupt handler 10 and also the exception handler. At the end of the user program, an INT 10 instruction is used to give control back to the os and invoke software interrupt handler 10. An exception handler routine is required when the machine encounters unexpected events within the user program. The default action is to halt the machine.
 
 ### 3. spl_progs/os_startup.spl
 
@@ -58,7 +58,7 @@ $ ./xsm --debug --timer 0
 
 During each iteration use `r` command in debug mode to see the values of R0 and R1, with R1 having the sqaure of the number in R0. USe `c` to conitnue execution till next breakpoint.
 
-## Exaplanation
+## Explanation
 
 ### 1. Disk
 
@@ -102,4 +102,4 @@ A page table maps a user program's virtual address space to the machine's physic
 | PTBR + 2 | 66 | 0100 |
 | PTBR + 4 | 76 | 0110 |
 
-The init program strats from logical address 0. Hence, 0 is pushed to the top of the stack. Here, page 76 is allocated as the stack for the INIT program and its corresponding physical address is 76\*512. 0 is stored at this location. Since, within the user program, stack begins at 2\*512, this value is stored in SP. After all this, the OS startup code transfers control using the IRET instruction.
+The init program starts from logical address 0. Hence, 0 is pushed to the top of the stack. Here, page 76 is allocated as the stack for the INIT program and its corresponding physical address is 76\*512. 0 is stored at this location. Since, within the user program, stack begins at 2\*512, this value is stored in SP. The OS startup code, then, transfers control to the INIT program using the IRET instruction.
