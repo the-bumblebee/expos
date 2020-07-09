@@ -1,4 +1,4 @@
-# Stage 6: Running a User Program
+# Stage 7: ABI and XEXE Format
 
 In this stage, we will rewrite the user program and the OS startup ccording to the expos ABI.
 
