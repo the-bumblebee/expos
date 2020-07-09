@@ -1,4 +1,4 @@
-# Satge 6
+# Stage 6
 
 In this stage, we will be running our first user program, `squares.xsm`, in unprivileged mode.
 
@@ -6,13 +6,13 @@ In this stage, we will be running our first user program, `squares.xsm`, in unpr
 
 ### 1. expl_progs/squares.xsm
 
-This is the user program that we wish to run, which calculates the sqaures of the first 5 natural numbers. This will be loaded as INIT program by the OS startup code. Since the code section occupies the first two pages, the code address begins from logical addess 0 (just for this example, all other user programs will have code section in pages 4 to 7 and thus code address begins at 2048 [4*512]). Hence the labels used were translated accordingly.
+This is the user program that we wish to run, which calculates the sqaures of the first 5 natural numbers. This will be loaded as INIT program by the OS startup code. Since the code section occupies the first two pages, the code address begins from logical addess 0 (just for this example, all other user programs will have code section in pages 4 to 7 and thus code address begins at 4*512, which is 2048). Hence the labels used were translated accordingly.
 
 ### 2. spl_progs/haltprog.spl
 
 This spl program has only a "halt" statement and will be used as the interrupt handler 10 and also the exception handler. At the end of the user program, an INT 10 instruction is used to give control back to the os and invokes software interrupt handler 10. An exception handler routine is required when the machine encounter unexpected events within the user program. The default action is to halt the machine.
 
-### 3. spl_progs/os_startup.xsm
+### 3. spl_progs/os_startup.spl
 
 This is the OS startup code that loads the rest of the program from disk to memory. It sets up the page table for the INIT program, sets values for the PTBR and PTLR registers and also sets the stack. Once everything is set, the code transfers control to the INIT program using IRET instruction.
 
