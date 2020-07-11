@@ -94,7 +94,7 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 | 65 - 66 | Init/Login Code |
 | ... | ... |
 
-* Page tables are stored at 58th page along with other necessary data structures, which we will see in due course of time.)
+\* Page tables are stored at 58th page along with other necessary data structures, which we will see in due course of time.)
 
 The OS startup program loads the disk blocks to their corresponding page numbers.
 
