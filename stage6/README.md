@@ -89,14 +89,18 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 | ... | ... |
 | 22 - 23 | Interrupt 10 Routine: Exit |
 | ... | ... |
+| 58 | Page Tables* |
+| ... | ... |
 | 65 - 66 | Init/Login Code |
 | ... | ... |
+
+* Page tables are stored at 58th page along with other necessary data structures, which we will see in due course of time.)
 
 The OS startup program loads the disk blocks to their corresponding page numbers.
 
 ### 3. Page Table for INIT Program
 
-A page table maps a user program's virtual address space to the machine's physical address space. Each page table entry for a logical page is of 2 words. The first word is the physical page number and the second word contains a series of flags such as reference bit, valid/invalid bit, write permission bit and dirty bit. The OS startup code sets PTBR to PAGE_TABLE_BASE and PTLR to 3 (2 pages for code section and 1 page for stack). The page table is then set as follows.
+A page table maps a user program's virtual address space to the machine's physical address space. Each page table entry for a logical page is of 2 words. The first word is the physical page number and the second word contains a series of flags such as reference bit, valid/invalid bit, write permission bit and dirty bit. The OS startup code sets PTBR to PAGE_TABLE_BASE (which has a value of 29696 - page 58) and PTLR to 3 (2 pages for code section and 1 page for stack). The page table is then set as follows.
 
 | Memory Address | Physical Page Number | Flags |
 |---|---|---|
