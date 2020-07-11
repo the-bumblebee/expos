@@ -99,15 +99,19 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 | ... | ... |
 | 22 - 23 | Interrupt 10 Routine: Exit |
 | ... | ... |
+| 58 | Page Tables* |
+| ... | ... |
 | 63- 64 | Expos Library |
 | 65 - 66 | Init/Login Code |
 | ... | ... |
+
+\* Page tables are stored at 58th page along with other necessary data structures, which we will see in due course of time.)
 
 The OS startup program loads the disk blocks to their corresponding page numbers.
 
 ### 3. Page Table for INIT Program (Same as stage 7)
 
-PTBR is set to PAGE_TABLE_BASE and PTLR to 10 (2 pages for library, 2 for heap, 4 for code, 2 for stack). The page table is then set as follows.
+PTBR is set to PAGE_TABLE_BASE (29696 - page 58) and PTLR to 10 (2 pages for library, 2 for heap, 4 for code, 2 for stack). The page table is then set as follows.
 
 | Memory Address | Physical Page Number | Flags |
 |---|---|---|
