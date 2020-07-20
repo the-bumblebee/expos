@@ -62,10 +62,12 @@ Running the machine in debug mode with timer enabled.
 
 ```
 $ cd ~/myexpos/xsm/
-$ ./xsm --timer 2
+$ ./xsm --debug --timer 2
 ```
 
 The timer interrupts after every 2 instructions and the timer interrupt routine is executed.
+
+`debug` flag used to see contents of R0 and R1 which changes in each iteration (R1 = R0^2).
 
 ## Explanation
 
