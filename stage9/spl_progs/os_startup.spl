@@ -1,0 +1,67 @@
+//Loads library code from disk blocks 13 and 14 to physical pages 63 and 64
+loadi(63,13);
+loadi(64,14);
+
+//Loads INIT program from 7, 8 blocks to 65, 66 physical pages
+loadi(65,7);
+loadi(66,8);
+
+//Loads interrupt routine 10 from 35, 36 blocks to 22, 23 physical pages
+loadi(22,35);
+loadi(23,36);
+
+//Loads exception handler from 15, 16 blocks to 2, 3 physical pages
+loadi(2, 15);
+loadi(3, 16);
+
+//Loads timer interrupt routine from 17, 18 blocks to 4, 5 physical pages
+loadi(4, 17);
+loadi(5, 18);
+
+PTBR = PAGE_TABLE_BASE;
+PTLR = 10;
+
+//Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+
+//Heap
+[PTBR+4] = 78;
+[PTBR+5] = "0110";
+[PTBR+6] = 79;
+[PTBR+7] = "0110";
+
+//Code
+[PTBR+8] = 65;
+[PTBR+9] = "0100";
+[PTBR+10] = 66;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//Stack
+[PTBR+16] = 76;
+[PTBR+17] = "0110";
+[PTBR+18] = 77;
+[PTBR+19] = "0110";
+
+//2nd entry of header of executable contain entry point
+[76*512] = [65*512 + 1];
+
+SP = 8*512;
+
+//Process table
+//Setting User page area to physical page 80 (first available free page)
+//Setting PID to 0
+//PROCESS_TABLE = 28672
+[PROCESS_TABLE + 11] = 80;
+[PROCESS_TABLE + 1] = 0;
+
+//Second field of System status table set to PID 0
+[SYSTEM_STATUS_TABLE + 1] = 0;
+
+ireturn;
