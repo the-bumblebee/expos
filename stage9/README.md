@@ -1,4 +1,4 @@
-# Stage 8: Handling Timer Interrupt
+# Stage 9: Handling Kernel Stack
 
 In this stage, we will write a timer interrupt routine and load it into memory.
 
