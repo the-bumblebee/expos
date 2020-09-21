@@ -8,6 +8,13 @@ In this stage, we will write a timer interrupt routine and load it into memory.
 
 A program to print squares of first 6 natural numbers. (Remains unchanged as in stage 7)
 
+| Logical Page Number | Contents |
+|---|---|
+| 0 - 1 | Library Code |
+| 2 - 3 | Heap |
+| 4 - 7 | User Program Code |
+| 8 - 9 | Stack |
+
 ### 2. spl_progs/haltprog.spl
 
 A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stage 6-7)

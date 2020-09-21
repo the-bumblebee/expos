@@ -1,24 +1,31 @@
 # Stage 9: Handling Kernel Stack
 
-In this stage, we will write a timer interrupt routine and load it into memory.
+In this stage, we will look at handling kernel spaces while switching between user and kernel mode.
 
 ## Files Included
 
 ### 1. expl_progs/squares.xsm
 
-A program to print squares of first 6 natural numbers. (Remains unchanged as in stage 7)
+A program to print squares of first 6 natural numbers. (Remains unchanged as in stages 7-8)
+
+| Logical Page Number | Contents |
+|---|---|
+| 0 - 1 | Library Code |
+| 2 - 3 | Heap |
+| 4 - 7 | User Program Code |
+| 8 - 9 | Stack |
 
 ### 2. spl_progs/haltprog.spl
 
-A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stage 6-7)
+A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stages 6-8)
 
 ### 3. spl_progs/sample_timer.spl
 
-A program to be used as timer interrupt routine. Prints "TIMER" to the console on interrupt.
+A program to be used as timer interrupt routine. Prints "TIMER" to the console on interrupt. (Remains unchanged as in stage 8)
 
 ### 4. spl_progs/os_startup.spl
 
-The startup code is modified to load the the timer interrupt routine from disk to memory.
+The startup code is modified to load the the timer interrupt routine from disk to memory. (Remains unchanged as in stage 8)
 
 ## Compiling SPL Programs
 

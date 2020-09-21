@@ -8,6 +8,13 @@ In this stage, we will rewrite the user program and the OS startup ccording to t
 
 This program is rewritten to include an 8 word header before the first instruction. Hence, the first instruction is loaded into memory address 2056. The entry point address is specified by the second word in the header. The library code is loaded into pages 0 and 1 of every user program. Library code is not part of the user program. Pages 2 and 3 are allocated for heap. Pages 4 to 7 are allocated for user program code. Pages 8 and 9 are allocated for the stack.
 
+| Logical Page Number | Contents |
+|---|---|
+| 0 - 1 | Library Code |
+| 2 - 3 | Heap |
+| 4 - 7 | User Program Code |
+| 8 - 9 | Stack |
+
 ### 2. spl_progs/haltprog.spl
 
 This spl program has only a "halt" statement and will be used as the interrupt handler 10 and also the exception handler. At the end of the user program, an INT 10 instruction is used to give control back to the os and invoke software interrupt handler 10. An exception handler routine is required when the machine encounters unexpected events within the user program. The default action is to halt the machine. (Remains unchanged as in stage 6)
