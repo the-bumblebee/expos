@@ -29,8 +29,8 @@ It is assumed that both the eXpOS package and this repository are set up at home
 
 ```
 $ cd ~/myexpos/spl/
-$ ./spl ~/expos-roadmap/spl_progs/haltprog.spl
-$ ./spl ~/expos-roadmap/spl_progs/os_startup.spl
+$ ./spl ~/expos-roadmap/stage7/spl_progs/haltprog.spl
+$ ./spl ~/expos-roadmap/stage7/spl_progs/os_startup.spl
 ```
 
 This will generate corresponding xsm files:`haltprog.xsm` and `os_startup.xsm`.
@@ -47,10 +47,10 @@ $ ./xfs-interface
 Within the XFS interface program, type in the following commands at the prompt.
 
 ```
-# load --init $HOME/expos-roadmap/expl_progs/squares.xsm
-# load --int=10 $HOME/expos-roadmap/spl_progs/haltprog.xsm
-# load --exhandler $HOME/expos-roadmap/spl_progs/haltprog.xsm
-# load --os $HOME/expos-roadmap/spl_progs/os_startup.xsm
+# load --init $HOME/expos-roadmap/stage7/expl_progs/squares.xsm
+# load --int=10 $HOME/expos-roadmap/stage7/spl_progs/haltprog.xsm
+# load --exhandler $HOME/expos-roadmap/stage7/spl_progs/haltprog.xsm
+# load --os $HOME/expos-roadmap/stage7/spl_progs/os_startup.xsm
 # load --library $HOME/myexpos/expl/library.lib
 # exit
 ```
