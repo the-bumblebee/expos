@@ -1,80 +1,67 @@
-# Stage 9: Handling Kernel Stack
+# Stage 10: Console Output
 
-In this stage, we will look at handling kernel spaces while switching between user and kernel mode.
+In this stage, we will rewrite the user program to enable it to write to the terminal. The main datastructures we are concerned with, here, are the system status table, process table and page table.
 
 ## Files Included
 
 ### 1. expl_progs/squares.xsm
 
-A program to print squares of first 6 natural numbers. (Remains unchanged as in stages 7-8)
-
-| Logical Page Number | Contents |
-|---|---|
-| 0 - 1 | Library Code |
-| 2 - 3 | Heap |
-| 4 - 7 | User Program Code |
-| 8 - 9 | Stack |
+The program is rewritten so that write system call is issued to print the squared value. The registers in use are saved to the user stack, after which the system call number (for write - 5) and arguments are pushed. Argument 1 is the file descriptor (for terminal, -2), argument 2 is the value to be printed and argument 3 could be any value (not in use but by convention, 3 arguments required). Then a space for return value is allocated in the stack. The interrupt is invoked with the `INT` instruction (`INT 7` for write). Do note that comments cannot be written in xsm programs.
 
 ### 2. spl_progs/haltprog.spl
 
-A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stages 6-8)
+A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stages 6-9)
 
 ### 3. spl_progs/sample_timer.spl
 
-A program to be used as timer interrupt routine. Prints "TIMER" to the console on interrupt. A few changes are made to point SP to kernel stack, backup and restore user context. The functionality remains the same.
+A program to be used as timer interrupt routine. Prints "TIMER" to the console on interrupt. This is not used in this stage. (Remains unchanged as in stage 9)
 
-### 4. spl_progs/os_startup.spl
+### 4. spl_progs/console_output.spl
 
-The startup code is modified to load the the timer interrupt routine from disk to memory. (Remains unchanged as in stage 8)
+The inteerupt 7 routine programs used for printing to the terminal screen. This program requires 3 arguments- argument 1 is -2 (file descriptor for terminal), argument 2 is the value to be printed and argument 3 is could be anything (exists solely for the purpose of convention). If argument 1 is -2, prints value to the terminal, else, returns -1.
+
+### 5. spl_progs/os_startup.spl
+
+The startup code is modified to load the interrupt 7 routine from disk to memory.
 
 ## Compiling SPL Programs
 
 It is assumed that both the eXpOS package and this repository are set up at home directory. If not, follow the main [README.md](/README.md).
 
-```
-$ cd ~/myexpos/spl/
-$ ./spl ~/expos-roadmap/stage9/spl_progs/haltprog.spl
-$ ./spl ~/expos-roadmap/stage9/spl_progs/os_startup.spl
-$ ./spl ~/expos-roadmap/stage9/spl_progs/sample_timer.spl
-```
+Starting from this stage, a bash script, `run.sh`, containing commands for compiling the spl programs and XFS-interface commands for loading the required files.
 
-This will generate corresponding xsm files:`haltprog.xsm`, `os_startup.xsm`, and `sample_timer.xsm`.
-
-## Loading Programs to Disk
-
-Run the following commands to run the XFS interface.
+First, set executable permission for the bash script:
 
 ```
-$ cd ~/myexpos/xfs-interface/
-$ ./xfs-interface
+$ cd ~/expos-roadmap/
+$ sudo chmod +x run.sh
 ```
 
-Within the XFS interface program, type in the following commands at the prompt.
+Then run the bash script:
 
 ```
-# load --init $HOME/expos-roadmap/stage9/expl_progs/squares.xsm
-# load --int=10 $HOME/expos-roadmap/stage9/spl_progs/haltprog.xsm
-# load --exhandler $HOME/expos-roadmap/stage9/spl_progs/haltprog.xsm
-# load --os $HOME/expos-roadmap/stage9/spl_progs/os_startup.xsm
-# load --library $HOME/myexpos/expl/library.lib
-# load --int=timer $HOME/expos-roadmap/stage9/spl_progs/sample_timer.xsm
-# exit
+./run.sh
 ```
 
-`~` doesn't work within the XFS interface program and so `$HOME` has to be used.
+This will generate corresponding xsm files:`haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm` and `console_output.xsm`.
+
+Then run:
+
+$ cd ~/myexpos/xfs-interface
+$ ./xfs-interface run ~/expos-roadmap/stage10/batch-xfs
+
+This will load the compiled spl programs and also the `squares.xsm` xsm program to the disk.
 
 ## Running XSM Machine
 
-Running the machine in debug mode with timer enabled.
+Run the machine:
 
 ```
 $ cd ~/myexpos/xsm/
-$ ./xsm --debug --timer 2
+$ ./xsm
 ```
 
-The timer interrupts after every 2 instructions and the timer interrupt routine is executed.
-
-`debug` flag used to see contents of R0 and R1 which changes in each iteration (R1 = R0^2).
+The result will be written to the console.
 
 ## Explanation
 
@@ -92,6 +79,8 @@ The files are loaded into the following disk blocks.
 | 15 - 16 | Exception Handler |
 | 17 - 18 | Timer Interrupt Routine |
 | ... | ... |
+| 29 - 30 | Interrupt 7 Routine: Write |
+| ... | ... |
 | 35 - 36 | Interrupt 10 Routine: Exit |
 | ... | ... |
 
@@ -105,6 +94,8 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 | 1 | Page for OS startup code |
 | 2 - 3 | Exception Handler |
 | 4 - 5 | Timer Interrupt Routine |
+| ... | ... |
+| 16 - 17 | Interrupt 7 Routine: Write |
 | ... | ... |
 | 22 - 23 | Interrupt 10 Routine: Exit |
 | ... | ... |
