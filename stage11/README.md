@@ -1,12 +1,12 @@
-# Stage 10: Console Output
+# Stage 11: Introduction to EXPL
 
-In this stage, we will rewrite the user program to enable it to write to the terminal. The main datastructures we are concerned with, here, are the system status table, process table and page table.
+In this stage, we write a user program using the ExpL language and compile it down to an xsm file using the provided ExpL compiler.
 
 ## Files Included
 
-### 1. expl_progs/squares.xsm
+### 1. expl_progs/numbers.expl
 
-The program is rewritten so that write system call is issued to print the squared value. The registers in use are saved to the user stack, after which the system call number (for write - 5) and arguments are pushed. Argument 1 is the file descriptor (for terminal, -2), argument 2 is the value to be printed and argument 3 could be any value (not in use but by convention, 3 arguments required). Then a space for return value is allocated in the stack. The interrupt is invoked with the `INT` instruction (`INT 7` for write). Do note that comments cannot be written in xsm programs.
+This is the user program written in ExpL language which prints the first 50 natural numbers. This program also uses exposcall() function to write the result on to the screen. The ExpL compiler translates the exposcall() to the corresponding low level system call and produces `numbers.xsm` in the same directory, on compiling.
 
 ### 2. spl_progs/haltprog.spl
 
@@ -18,7 +18,7 @@ A program to be used as timer interrupt routine. Prints "TIMER" to the console o
 
 ### 4. spl_progs/console_output.spl
 
-The intrrupt 7 routine programs used for printing to the terminal screen. This program requires 3 arguments- argument 1 is -2 (file descriptor for terminal), argument 2 is the value to be printed and argument 3 is could be anything (exists solely for the purpose of convention). If argument 1 is -2, prints value to the terminal, else, returns -1.
+The interrupt 7 routine programs used for printing to the terminal screen. This program requires 3 arguments- argument 1 is -2 (file descriptor for terminal), argument 2 is the value to be printed and argument 3 is could be anything (exists solely for the purpose of convention). If argument 1 is -2, prints value to the terminal, else, returns -1.
 
 ### 5. spl_progs/os_startup.spl
 
@@ -28,12 +28,12 @@ The startup code is modified to load the interrupt 7 routine from disk to memory
 
 It is assumed that both the eXpOS package and this repository are set up at home directory. If not, follow the main [README.md](/README.md).
 
-Starting from this stage, a bash script, `run.sh`, containing commands for compiling the spl programs and XFS-interface commands for loading the required files. Another file, `batch-xfs` is also provided that contains commands to be run by the `xfs-interface` tool.
+A bash script, `run.sh`, containing commands for compiling the expl programs and spl programs is provided. Another file `batch-xfs` contains commands to be run by the `xfs-interface` tool for loading the programs to appropriate disk blocks.
 
 First, set executable permission for the bash script:
 
 ```
-$ cd ~/expos-roadmap/stage10
+$ cd ~/expos-roadmap/stage11
 $ sudo chmod +x run.sh
 ```
 
@@ -43,12 +43,12 @@ Then run the bash script:
 ./run.sh
 ```
 
-This will generate corresponding xsm files:`haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm` and `console_output.xsm`.
+This will generate corresponding xsm files: `numbers.xsm` in the `expl_progs` directory and `haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm` and `console_output.xsm` in the `spl_progs` directory.
 
 Then run:
 
 $ cd ~/myexpos/xfs-interface
-$ ./xfs-interface run ~/expos-roadmap/stage10/batch-xfs
+$ ./xfs-interface run ~/expos-roadmap/stage11/batch-xfs
 
 This will load the compiled spl programs and also the `squares.xsm` xsm program to the disk.
 
@@ -58,7 +58,7 @@ Run the machine:
 
 ```
 $ cd ~/myexpos/xsm/
-$ ./xsm
+$ ./xsm --timer 0
 ```
 
 The result will be written to the console.
