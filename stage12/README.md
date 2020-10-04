@@ -80,15 +80,17 @@ $ sudo chmod +x run.sh
 Then run the bash script:
 
 ```
-./run.sh
+$ ./run.sh
 ```
 
 This will generate corresponding xsm files: `numbers.xsm`(init program), `idle.xsm` in the `expl_progs` directory and `haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm`, `console_output.xsm` in the `spl_progs` directory.
 
 Then run:
 
+```
 $ cd ~/myexpos/xfs-interface
 $ ./xfs-interface run ~/expos-roadmap/stage12/batch-xfs
+```
 
 This will load the compiled spl programs and also the init and idle programs to the disk.
 

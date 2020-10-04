@@ -40,15 +40,17 @@ $ sudo chmod +x run.sh
 Then run the bash script:
 
 ```
-./run.sh
+$ ./run.sh
 ```
 
 This will generate corresponding xsm files:`haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm` and `console_output.xsm`.
 
 Then run:
 
+```
 $ cd ~/myexpos/xfs-interface
 $ ./xfs-interface run ~/expos-roadmap/stage10/batch-xfs
+```
 
 This will load the compiled spl programs and also the `squares.xsm` xsm program to the disk.
 
