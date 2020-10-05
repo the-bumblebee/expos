@@ -1,13 +1,19 @@
-# Stage 12: Introduction to Mutliprogramming
+# Stage 13: Boot Module
 
-In this stage, we will load two processes into memory and put them on concurrent execution. The timer interrupt handler is modified to implement a very primitive scheduler. The two processes are init and idle.
-
-## Questions
-
-1. Why idle program?
-2. Why KPTR offset?
+In this stage, we will immplement boot module. The OS startup code is provided only with one memory page. So, the OS code is split into modules. The boot module contain code for initializing several data structures. The OS stratup code only creates the idle process and set SP to the kernel stack of idle process.
 
 ## Files Included
+
+### 1. spl_progs/boot_module.spl
+
+This is the boot module and it contains code loads the library, interrupts and exception haandler from the disk to memory. It also sets up the page table and the process table for the init program. The STATE of the init program is set to CREATED as it will scheduled after idle program. We will be modifying much of this code rather than modifying the OS startup code.
+
+### 2. spl_progs/os_startup.spl
+
+The OS startup code is modified to load only the boot module and idle program to disk. The boot module is then invoked, after which, the tables for the idle program is initialised. The STATE of the program is set to RUNNING as it is scheduled to run first. The PTBR and PTLR registers are set and the ireturn statement passes control to the user programs.
+
+### Unchanged files:
+
 
 ### 1. expl_progs/idle.expl
 
@@ -19,50 +25,32 @@ Stack is allocated at 81 and User Page Area allocated at page 82.
 
 For details, see Disk and Memory layout below or [click here](https://exposnitc.github.io/os_implementation.html).
 
-### 2. spl_progs/os_startup.spl
+(Remains unchanged as in stage 12)
 
-Several data structures are set up so that the OS is able to keep track of the state of each process.
-
-PID of idle - 0 and init - 1.
-
-Page table starting address: `[PAGE_TABLE_BASE + 20*PID]`
-
-Process table starting address: `[PROCESS_TABLE + 16*PID]`
-
-Changes are made as the PID of init is 1 here (in earlier stages, it was 0).
-
-The bootstrap loader schedules the init program first. The STATE field in Process Table entry is set to RUNNING for the init program and CREATED(never scheduled before for execution) for idle program. STATE field occupiees 2 words. But 2nd word not used for CREATED and RUNNING.
-
-User Page Area allocated for idle and UPTR(8*512) and KPTR(0) fields set in the Process Table. KPTR stores offset of the kernel stack pointer within User Page Area.
-
-When a process is executing in user mode, the active stack will be the user stack. When the process switches to kernel mode, the first action by the kernel code will be to save the SP value to UPTR and set the SP register to the physical address of the top of the kernel stack. When a process enters the kernel mode from user mode, the kernel stack will always be empty. Hence, SP must be set to value (User Area Page Number * 512 - 1) whenever kernel mode is entered from the user mode.
-
-Before IRET instruction and switch from kernel mode to user mode, the SP set to in UPTR field. The kernel stack will be empty as there is no kernel context to be remembered. 
-
-### 3. spl_progs/sample_timer.spl
+### 2. spl_progs/sample_timer.spl
 
 The timer is modified to alternate between the two processes upon interruption.
 
 UPTR of current process is set. The SP set to UArea Page * 512 - 1 for kernel stack. Then the user context is backed up. Only after this, the registers could be used. The KTPR, PTBR, PTLR and STATE(READY) fields of current process are set. PTBR and PTLR registers set to the new process's values. SP is changed to point to the new process's kernel stack. PID value of the new process is set in System Status Table. Checking for CREATED state, so as to avoid restoring. STATE of process set to RUNNING. The user context is restored. SP is set to point to the top of the user stack.  Do note that this calculation uses only constants and do not use registers, as registers should not be used beyond `restore`.
 
-### Unchanged files:
+(Remains unchanged as in stage 12)
 
-### 1. expl_progs/numbers.expl
+### 3. expl_progs/numbers.expl
 
 This is the user program written in ExpL language which prints the first 50 natural numbers. This program also uses exposcall() function to write the result on to the screen. The ExpL compiler translates the exposcall() to the corresponding low level system call and produces `numbers.xsm` in the same directory, on compiling.
 
 Stack pages: 76, 77. User Area Page: 80.
 
-(Remains unchanged as in stage 11)
+(Remains unchanged as in stage 11-12)
 
-### 2. spl_progs/haltprog.spl
+### 4. spl_progs/haltprog.spl
 
-A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stages 6-11)
+A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stages 6-12)
 
-### 3. spl_progs/console_output.spl
+### 5. spl_progs/console_output.spl
 
 The interrupt 7 routine programs used for printing to the terminal screen. This program requires 3 arguments- argument 1 is -2 (file descriptor for terminal), argument 2 is the value to be printed and argument 3 is could be anything (exists solely for the purpose of convention). If argument 1 is -2, prints value to the terminal, else, returns -1.
-(Remains unchanged as in stage 11)
+(Remains unchanged as in stage 11-12)
 
 ## Compiling SPL Programs
 
@@ -73,7 +61,7 @@ A bash script, `run.sh`, containing commands for compiling the expl programs and
 First, set executable permission for the bash script:
 
 ```
-$ cd ~/expos-roadmap/stage12
+$ cd ~/expos-roadmap/stage13
 $ sudo chmod +x run.sh
 ```
 
@@ -83,13 +71,13 @@ Then run the bash script:
 $ ./run.sh
 ```
 
-This will generate corresponding xsm files: `numbers.xsm`(init program), `idle.xsm` in the `expl_progs` directory and `haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm`, `console_output.xsm` in the `spl_progs` directory.
+This will generate corresponding xsm files: `numbers.xsm`(init program), `idle.xsm` in the `expl_progs` directory and `boot_module.xsm`, `haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm`, `console_output.xsm` in the `spl_progs` directory.
 
 Then run:
 
 ```
 $ cd ~/myexpos/xfs-interface
-$ ./xfs-interface run ~/expos-roadmap/stage12/batch-xfs
+$ ./xfs-interface run ~/expos-roadmap/stage13/batch-xfs
 ```
 
 This will load the compiled spl programs and also the init and idle programs to the disk.
@@ -103,7 +91,7 @@ $ cd ~/myexpos/xsm/
 $ ./xsm --timer 20
 ```
 
-Result same as stage 11. To see changes add write call to idle and run.
+The idle program is run initially after which execution alternates between idle and init programs.
 
 ## Explanation
 
@@ -117,7 +105,7 @@ The files are loaded into the following disk blocks.
 | ... | ... |
 | 7 - 8 | Init/Login Code |
 | ... | ... |
-| **11 - 12** | **Idle Process** |
+| 11 - 12 | Idle Process |
 | 13 - 14 | Expos Library |
 | 15 - 16 | Exception Handler |
 | 17 - 18 | Timer Interrupt Routine |
@@ -125,6 +113,8 @@ The files are loaded into the following disk blocks.
 | 29 - 30 | Interrupt 7 Routine: Write |
 | ... | ... |
 | 35 - 36 | Interrupt 10 Routine: Exit |
+| ... | ... |
+| **67 - 68** | **Boot Module** |
 | ... | ... |
 
 ### 2. Memory
@@ -142,6 +132,7 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 | ... | ... |
 | 22 - 23 | Interrupt 10 Routine: Exit |
 | ... | ... |
+| 54 - 55 | Boot Module |
 | 56 | Process Table* |
 | 57 | System Status Table* |
 | 58 | Page Tables* |
@@ -149,7 +140,7 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 | 63- 64 | Expos Library |
 | 65 - 66 | Init/Login Code |
 | ... | ... |
-| **69 - 70** | **Idle Process** |
+| 69 - 70 | Idle Process |
 | ... | ... |
 
 \* Contains other data structures in addition to the given content.
