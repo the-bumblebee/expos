@@ -132,7 +132,7 @@ The ROM code (present in page 0) on the machine loads the OS startup code from d
 | ... | ... |
 | 22 - 23 | Interrupt 10 Routine: Exit |
 | ... | ... |
-| 54 - 55 | Boot Module |
+| **54 - 55** | **Boot Module** |
 | 56 | Process Table* |
 | 57 | System Status Table* |
 | 58 | Page Tables* |

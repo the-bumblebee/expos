@@ -16,7 +16,7 @@ alias processTableEntry R1;
 
 processTableEntry = PROCESS_TABLE + (currentPID * 16);
 
-// Saving KPTR as %512 allows OS to relocate USer Page Area
+// Saving KPTR as %512 allows OS to relocate User Page Area
 [processTableEntry + 12] = SP % 512;
 [processTableEntry + 14] = PTBR;
 [processTableEntry + 15] = PTLR;
