@@ -1,0 +1,11 @@
+load --module 7 $HOME/expos-roadmap/stage14/spl_progs/boot_module2.xsm
+load --module 5 $HOME/expos-roadmap/stage14/spl_progs/module_scheduler.xsm
+load --idle $HOME/expos-roadmap/stage14/expl_progs/idle.xsm
+load --init $HOME/expos-roadmap/stage14/expl_progs/oddNum.xsm
+load --exec $HOME/expos-roadmap/stage14/expl_progs/evenNum.xsm
+load --int=10 $HOME/expos-roadmap/stage14/spl_progs/interrupt_10.xsm
+load --exhandler $HOME/expos-roadmap/stage14/spl_progs/haltprog.xsm
+load --os $HOME/expos-roadmap/stage14/spl_progs/os_startup.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=timer $HOME/expos-roadmap/stage14/spl_progs/sample_timer.xsm
+load --int=7 $HOME/expos-roadmap/stage14/spl_progs/console_output.xsm

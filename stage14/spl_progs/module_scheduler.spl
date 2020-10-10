@@ -1,0 +1,93 @@
+// MODULE 5 - SCHEDULER
+
+// Timer saves context, state also assumed to be changed to READY
+// SP pointing to top of kernel stack of currently running process
+
+// Scheduler has to save values of PTBR, PTLR, SP to process table entry
+// After deciding new process, loads new values of SP, PTBR, PTLR
+// Also updates PID field in system status table
+// Changes state to RUNNING, if state is READY
+
+// 1. Obtain PID from System Status Table
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+// 2. Push BP register
+// multipush to push a sequence of registers to stack (multipop to pop)
+multipush (BP);
+
+// 3. Obtain current Process Table Entry
+alias currentProcessTable R1;
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+
+// 4. Save SP%512 to KPTR and save PTBR, PTLR
+[currentProcessTable + 12] = SP % 512;
+[currentProcessTable + 14] = PTBR;
+[currentProcessTable + 15] = PTLR;
+
+// 5, 6. Iterate through the process table entries to find process with READY/CEATED state else execution to idle
+alias newPID R2;
+newPID = (currentPID + 1) % 16;
+alias newProcessTable R4;
+newProcessTable = PROCESS_TABLE + (newPID * 16);
+
+// alias pid_itr R6;
+// alias flag R7;
+
+// pid_itr=1;
+// flag = 0;
+
+// while (pid_itr<16) do
+//     pid_itr = pid_itr + 1;
+//     currentPID=(currentPID+1)%16;
+//     // print "loop";
+//     // print current_pid;
+//     if (currentPID!=0) then
+//         if ([PROCESS_TABLE + currentPID*16 + 4] !="TERMINATED" ) then
+//             flag = 1;
+//             break;
+//         endif;
+//     endif;
+// endwhile;
+// if(flag == 0) then 
+//     currentPID = 0;
+// endif;
+// newPID = currentPID;
+
+while ([newProcessTable + 4] == "TERMINATED") do
+    print [newProcessTable + 4];
+    newPID = (newPID + 1) % 16;
+    newProcessTable = PROCESS_TABLE + (newPID * 16);
+endwhile;
+
+// 7. Set SP as (UArea Page number)*512 +(KPTR)
+SP = [newProcessTable + 11] * 512 + [newProcessTable + 12];
+
+// 8. Restore PTBR, PTLR of the new process
+PTBR = [newProcessTable + 14];
+PTLR = [newProcessTable + 15];
+// 9. Set newPID in system status table
+[SYSTEM_STATUS_TABLE + 1] = newPID;
+
+breakpoint;
+
+// 10. Check if new process state CREATED
+//      -SP set to UPTR
+//      -STATE changed to RUNNING
+//      -MODE FLAG set to 0
+//      -Switching to user mode
+if ([newProcessTable + 4] == CREATED) then
+    SP = [newProcessTable + 13];
+    [newProcessTable + 4] = RUNNING;
+    [newProcessTable + 9] = 0;
+    breakpoint;
+    ireturn;
+endif;
+// 11. Set state of program from READY to RUNNING
+[newProcessTable + 4] = RUNNING;
+
+// 12. Restore BP of new process.
+multipop (BP);
+
+// 13. Return to caller (usually timer interrupt)
+return;

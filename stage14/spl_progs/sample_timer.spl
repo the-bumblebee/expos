@@ -1,0 +1,66 @@
+// Setting UPTR value to current SP
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+
+// Setting SP to UArea Page number * 512 - 1
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+// USE REGISTERS ONLY AFTER THIS
+//Saving the user context
+backup;
+
+alias currentPID R0;
+
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+alias processTableEntry R1;
+
+processTableEntry = PROCESS_TABLE + (currentPID * 16);
+
+// ONly state set in timer, rest in scheeduler
+// [processTableEntry + 12] = SP % 512;
+// [processTableEntry + 14] = PTBR;
+// [processTableEntry + 15] = PTLR;
+print "timer";
+[processTableEntry + 4] = READY;
+
+
+// alias newPID R2;
+// if(currentPID == 0) then
+// 	newPID = 1;
+// else
+// 	newPID = 0;
+// endif;
+
+// Invoking scheduler
+call MOD_5;
+
+// alias newProcessTable R3;
+// newProcessTable = PROCESS_TABLE + newPID * 16;
+
+// //Set back Kernel SP, PTBR , PTLR
+// SP =  [newProcessTable + 11] * 512 + [newProcessTable + 12] ;
+// PTBR = [newProcessTable + 14];
+// PTLR = [newProcessTable + 15];
+
+// [SYSTEM_STATUS_TABLE + 1] = newPID;
+
+// // When scheduled for the first time, no user context to be restored
+// if([newProcessTable + 4] == CREATED) then
+// 	[newProcessTable + 4] = RUNNING;
+// 	SP = [newProcessTable + 13];
+// 	ireturn;
+// endif;
+
+// [newProcessTable + 4] = RUNNING;
+
+
+// DO NOT USE REGISTERS BEYOND THIS POINT
+//Restoring the user context
+restore;
+
+//Setting SP to user SP saved in process table.
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+
+ireturn;
