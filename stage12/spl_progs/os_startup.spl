@@ -53,23 +53,23 @@ PTBR=PAGE_TABLE_BASE;
 [PTBR+18] = -1;
 [PTBR+19] = "0000";
 
-//Process table for idle
+// Process table for idle
 // Setting PID to 0
 [PROCESS_TABLE + 1] = 0;
 // Setting STATE to CREATED
 [PROCESS_TABLE + 4] = CREATED;
-//Setting User page area to 82
+// Setting User page area to 82
 [PROCESS_TABLE + 11] = 82;
-//Setting KPTR to 0
+// Setting KPTR to 0
 [PROCESS_TABLE + 12] = 0;
-//Setting UPTR to 8*512
+// Setting UPTR to 8*512
 [PROCESS_TABLE + 13] = 8 * 512;
-//Setting PTBR
+// Setting PTBR
 [PROCESS_TABLE + 14] = PTBR;
-//Setting PTLR
+// Setting PTLR
 [PROCESS_TABLE + 15] = 10;
 
-//Setting entry point for idle
+// Setting entry point for idle
 [81*512] = [69*512 + 1];
 
 // Setting Page Table entry for init program
@@ -100,23 +100,23 @@ PTLR = 10;
 [PTBR+18] = 77;
 [PTBR+19] = "0110";
 
-//Process table for init
+// Process table for init
 // Setting PID to 1
 [PROCESS_TABLE + (16 * 1) + 1] = 1;
 // Setting STATE to RUNNING (first scheduled process)
 [PROCESS_TABLE + (16 * 1) + 4] = RUNNING;
-//Setting User page area to 80
+// Setting User page area to 80
 [PROCESS_TABLE + (16 * 1) + 11] = 80;
-//Setting KPTR to 0
+// Setting KPTR to 0
 [PROCESS_TABLE + (16 * 1) + 12] = 0;
-//Setting UPTR to 8*512
+// Setting UPTR to 8*512
 [PROCESS_TABLE + (16 * 1) + 13] = 8 * 512;
-//Setting PTBR
+// Setting PTBR
 [PROCESS_TABLE + (16 * 1) + 14] = PTBR;
-//Setting PTLR
+// Setting PTLR
 [PROCESS_TABLE + (16 * 1) + 15] = 10;
 
-//Setting entry point for init
+// Setting entry point for init
 [76*512] = [65*512 + 1];
 
 SP = 8*512;
