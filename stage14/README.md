@@ -58,44 +58,16 @@ A user program written in ExpL language which prints odd numbes from 1-100. This
 
 ### 1. expl_progs/idle.expl
 
-This is the idle program written in ExpL language. It contains an infininte loop. The program is compiled and loaded to disk blocks 11 and 12. The OS bootstrap loader must load this program to memory pages 69 and 70.
-
-As idle program doesn't use library functions or dynamic memory allocation, it doesn't need library or heap pages. Only one page is needed for stack, as its memory requirements are low.
-
 | Region | Memory Pages |
 |---|---|
 | Stack | 81 |
 | UAPage | 82 |
 
-For details, see Disk and Memory layout below or [click here](https://exposnitc.github.io/os_implementation.html).
+### 2. spl_progs/haltprog.spl
 
-(Remains unchanged as in stage 12)
+### 3. spl_progs/console_output.spl
 
-### 2. spl_progs/sample_timer.spl
-
-The timer is modified to alternate between the two processes upon interruption.
-
-UPTR of current process is set. The SP set to UArea Page * 512 - 1 for kernel stack. Then the user context is backed up. Only after this, the registers could be used. The KTPR, PTBR, PTLR and STATE(READY) fields of current process are set. PTBR and PTLR registers set to the new process's values. SP is changed to point to the new process's kernel stack. PID value of the new process is set in System Status Table. Checking for CREATED state, so as to avoid restoring. STATE of process set to RUNNING. The user context is restored. SP is set to point to the top of the user stack.  Do note that this calculation uses only constants and do not use registers, as registers should not be used beyond `restore`.
-
-(Remains unchanged as in stage 12)
-
-### 3. spl_progs/haltprog.spl
-
-A program with just a "halt" instruction. Used as the exception handler.
-
-(Remains unchanged as in stages 6-13)
-
-### 4. spl_progs/console_output.spl
-
-The interrupt 7 routine programs used for printing to the terminal screen. This program requires 3 arguments- argument 1 is -2 (file descriptor for terminal), argument 2 is the value to be printed and argument 3 is could be anything (exists solely for the purpose of convention). If argument 1 is -2, prints value to the terminal, else, returns -1.
-
-(Remains unchanged as in stage 11-13)
-
-### 5. spl_progs/os_startup.spl
-
-The OS startup code is modified to load only the boot module and idle program to disk. The boot module is then invoked, after which, the tables for the idle program is initialised. The STATE of the program is set to RUNNING as it is scheduled to run first. The PTBR and PTLR registers are set and the ireturn statement passes control to the user programs.
-
-(Remains unchanged as in stage 13)
+### 4. spl_progs/os_startup.spl
 
 ## Compiling SPL Programs
 
