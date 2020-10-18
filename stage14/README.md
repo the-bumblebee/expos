@@ -30,7 +30,7 @@ The ExpL compiler sets every user program to execute the `INT 10` instruction at
 * Change state of the invoking process to TERMINATED.
 * Iterate over all Process Table Entries to check whether all processes except idle are terminated. In that case, halt the system. Else, call the scheduler. There will be no return to this process as the scheduler will not schedule this process again.
 
-### 5. expl_progs/evenNUm.expl
+### 5. expl_progs/evenNum.expl
 
 A user program written in ExpL language that prints even numbers from 1-100. This is loaded as follows using `xfs-interface`.
 ```
@@ -127,7 +127,11 @@ $ ./xfs-interface run ~/expos-roadmap/stage14/batch-xfs
 
 This will load the compiled spl programs and the user programs to disk.
 
-### Note:
+### Note1: 
+
+A bash script `rm.sh` is provided to remove all the `xsm` files.
+
+### Note2:
 
 To view the disk block of `evenNum.xsm`, dump the inode table using the following commands,
 
@@ -156,118 +160,14 @@ $ cd ~/myexpos/xsm/
 $ ./xsm --timer 20
 ```
 
-The idle program is run initially after which execution alternates between idle and init programs.
+You will get an output of numbers from 1 - 100 in order if the value of timer is small, and out of order as value increases.
 
 ## Explanation
 
-### 1. Disk
+1. [Disk and Memory Organization](https://exposnitc.github.io/os_implementation.html) page.
 
-The files are loaded into the following disk blocks.
+2. [Page Table](https://exposnitc.github.io/arch_spec-files/paging_hardware.html) for more info.
 
-| Block Number | Contents |
-|---|---|
-| 0 - 1 | Bootstrap/OS startup code |
-| ... | ... |
-| 7 - 8 | Init/Login Code |
-| ... | ... |
-| 11 - 12 | Idle Process |
-| 13 - 14 | Expos Library |
-| 15 - 16 | Exception Handler |
-| 17 - 18 | Timer Interrupt Routine |
-| ... | ... |
-| 29 - 30 | Interrupt 7 Routine: Write |
-| ... | ... |
-| 35 - 36 | Interrupt 10 Routine: Exit |
-| ... | ... |
-| **63 - 64** | **Scheduler (Module 5)** |
-| ... | ... |
-| 67 - 68 | Boot Module |
-| ... | ... |
+3. [Process Table](https://exposnitc.github.io/os_design-files/process_table.html).
 
-### 2. Memory
-
-The ROM code (present in page 0) on the machine loads the OS startup code from disk block 0 to memory page 1 and sets IP to 512, which is the first instruction in page 1. The following is the memory layout.
-
-| Physical Page Number | Contents |
-|---|---|
-| 0 | ROM Code |
-| 1 | Page for OS startup code |
-| 2 - 3 | Exception Handler |
-| 4 - 5 | Timer Interrupt Routine |
-| ... | ... |
-| 16 - 17 | Interrupt 7 Routine: Write |
-| ... | ... |
-| 22 - 23 | Interrupt 10 Routine: Exit |
-| ... | ... |
-| **50 - 51** | **Scheduler (Module 5)** |
-| ... | ... |
-| 54 - 55 | Boot Module (Module 7) |
-| 56 | Process Table* |
-| 57 | System Status Table* |
-| 58 | Page Tables* |
-| ... | ... |
-| 63- 64 | Expos Library |
-| 65 - 66 | Init/Login Code |
-| ... | ... |
-| 69 - 70 | Idle Process |
-| ... | ... |
-
-\* Contains other data structures in addition to the given content.
-
-The OS startup program loads the disk blocks to their corresponding page numbers.
-
-**Note:** For a more detailed organization of the memory and disk refer to the [OS implemenation](https://exposnitc.github.io/os_implementation.html) page.
-
-### 3. Page Table
-
-PTBR is set to PAGE_TABLE_BASE (29696 - page 58) and PTLR to 10 (2 pages for library, 2 for heap, 4 for code, 2 for stack). The page table of the init program as follows.
-
-| Memory Address | Physical Page Number | Flags |
-|---|---|---|
-| PTBR | 63 | 0100 |
-| PTBR + 2 | 64 | 0100 |
-| PTBR + 4 | 78 | 0110 |
-| PTBR + 6 | 79 | 0110 |
-| PTBR + 8 | 65 | 0100 |
-| PTBR + 10 | 66 | 0100 |
-| PTBR + 12 | -1 | 0000 |
-| PTBR + 14 | -1 | 0000 |
-| PTBR + 16 | 76 | 0110 |
-| PTBR + 18 | 77 | 0110 |
-
-For idle program, only entries are for code(69, 70) and stack(81).
-
-The second entry in the header([65\*512 + 2]) is the entry point of the program and is pushed into the stack(starting address: 76\*512). SP is set to 8\*512 which is the logical address of the stack.
-
-Read [Paging Hardware](https://exposnitc.github.io/arch_spec-files/paging_hardware.html) for more info.
-
-### 4. Process Table
-
-A process table entry for each process present in the system. PROCESS_TABLE points to starting address of the process table (28672 - page 58). The table has space for 16 entires and each entry have 16 words (a total of 256 words). An entry has the following fields.
-
-| Offset: | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Field: | TICK | PID* | PPID | USERID | STATE* | STATE | SWAP FLAG | INODE INDEX | INPUT BUFFER | MODE FLAG | USER AREA SWAP STATUS | USER AREA PAGE NUMBER* | KERNEL STACK POINTER(KPTR)* | USER STACK POINTER(UPTR)* | PTBR* | PTLR* |
-
-\* We are concerned only with these fields, for now.
-
-More info [here](https://exposnitc.github.io/os_design-files/process_table.html).
-
-### 5. System Status Table
-
-8 bytes long and with the following format,
-
-| Offset | Field | Description |
-|---|---|---|
-| 0 | CURRENT_USER_ID | ... |
-| 1 | CURRENT_PID | PID of currently running process |
-| 2 | MEM_FREE_COUNT | ... |
-| 3 | WAIT_MEM_COUNT | ... |
-| 4 | SWAPPED CONTENT | ... |
-| 5 | PAGING STATUS | ... |
-| 6 | CURRENT_PID2(NEXSM) | ... |
-| 7 | LOGOUT_STATUS(NEXSM) | ... |
-
-The table starts at address 29650 (page 57). SYSTEM_STATUS_TABLE points to this location.
-
-More info [here](https://exposnitc.github.io/os_design-files/mem_ds.html#ss_table).
+4. [System Status Table](https://exposnitc.github.io/os_design-files/mem_ds.html#ss_table).
