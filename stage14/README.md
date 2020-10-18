@@ -38,6 +38,8 @@ load --exec <path_to_file.xsm>
 ```
 The file is loaded to disk block 69 (dump the contents of INODE TABLE to get this).
 
+| Region | Memory Pages |
+|---|---|
 | Stack | 84 - 85 |
 | Heap | 86 - 87 |
 | UAPage | 88 |
@@ -46,6 +48,8 @@ The file is loaded to disk block 69 (dump the contents of INODE TABLE to get thi
 
 A user program written in ExpL language which prints odd numbes from 1-100. This is loaded as the init program.
 
+| Region | Memory Pages |
+|---|---|
 | Stack | 76 - 77 |
 | Heap | 78 - 79 |
 | UAPage | 80 |
@@ -58,6 +62,8 @@ This is the idle program written in ExpL language. It contains an infininte loop
 
 As idle program doesn't use library functions or dynamic memory allocation, it doesn't need library or heap pages. Only one page is needed for stack, as its memory requirements are low.
 
+| Region | Memory Pages |
+|---|---|
 | Stack | 81 |
 | UAPage | 82 |
 
