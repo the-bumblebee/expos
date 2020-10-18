@@ -1,0 +1,30 @@
+// Function number in R1 and PID in R2
+alias funcNum R1;
+alias currentPID R2;
+
+// Check if function number is 3, else return
+if (funcNum == 3) then
+    // Saving the regusters in use
+    multipush(R0, R1, R2, R3);
+    // Setting function number in R1 as 8 for Acquire Terminal. R2 already has the PID
+    R1 = 8;
+    // Call the Resource Manager Module (Module 0)
+    call RESOURCE_MANAGER;
+    // Restore registers
+    multipop(R0, R1, R2, R3);
+    // Print the word stored in R3
+    print R3;
+    // Store the registers in use
+    multipush(R0, R1, R2, R3);
+    // Setting function number in R1 as 9 for Release Terminal. R2 already has the PID
+    R1 = 9;
+    // Call the Resource Manager Module (Module 0)
+    call RESOURCE_MANAGER;
+    // Store the return vale in R0 in R4 and restore registers
+    alias returnValue R4;
+    returnValue = R0;
+    multipop(R0, R1, R2, R3);
+    return;
+else
+    return;
+endif;

@@ -1,0 +1,28 @@
+alias currentPID R0;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+alias currentProcessTable R1;
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+
+// 1. Change state of invoking process to TERMINATED
+[currentProcessTable + 4] = TERMINATED;
+
+
+// 2. Iterate through all with idle at the last to check if TERMINATED
+alias newPID R2;
+newPID = 1;
+alias newProcessTable R3;
+newProcessTable = PROCESS_TABLE + (newPID * 16);
+while ([newProcessTable + 4] != CREATED && [newProcessTable + 4] != READY) do
+    newPID = (newPID + 1) % 16;
+    newProcessTable = PROCESS_TABLE + (newPID * 16);
+endwhile;
+
+// Terminated if newPID == 0, that is, idle program only remains
+if (newPID == 0) then
+    halt;
+endif;
+
+// Else call scheduler
+
+call MOD_5;

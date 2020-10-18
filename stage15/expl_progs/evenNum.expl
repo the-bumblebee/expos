@@ -1,0 +1,14 @@
+int main()
+{
+decl
+    int temp, evenNum;
+enddecl
+begin
+    evenNum = 2;
+    while ( evenNum <= 100 ) do
+         temp = exposcall ( "Write" , -2, evenNum );
+         evenNum = evenNum + 2;
+    endwhile;
+    return 0;
+end
+}
