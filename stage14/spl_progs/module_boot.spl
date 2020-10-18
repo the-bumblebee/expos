@@ -25,8 +25,7 @@ loadi(16,29);
 loadi(17,30);
 
 // Loads the evenNum executable from block 69 to 83rd physical page
-// 82 pages
-load(83, 69);
+loadi(83, 69);
 
 // Loads scheduler from 63, 64 to 50, 51
 loadi(50,63);

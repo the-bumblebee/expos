@@ -1,16 +1,54 @@
 # Stage 14: Round Robin Scheduler
 
-In this stage, we will immplement boot module. The OS startup code is provided only with one memory page. So, the OS code is split into modules. The boot module contain code for initializing several data structures. The OS stratup code only creates the idle process and set SP to the kernel stack of idle process.
+In this stage, we will implement the round robin scheduler module. Another user program is hand created and along with init and idle, this is also loaded.
 
 ## Files Included
 
-### 1. spl_progs/boot_module.spl
+### 1. spl_progs/module_scheduler.spl
 
-This is the boot module and it contains code loads the library, interrupts and exception haandler from the disk to memory. It also sets up the page table and the process table for the init program. The STATE of the init program is set to CREATED as it will scheduled after idle program. We will be modifying much of this code rather than modifying the OS startup code.
+* Obtain the current PID from System Status Table.
+* BP is pushed to the top of the stack. The OS kernel expects the caller to save all the registers except BP. (In ExpL compiler, this convention is followed.)
+* The Process Table Entry curresponding to the current PID is obtained. KPTR (SP % 512), PTBR and PTLR fields are set.
+* Iterate through Process Table entries to find a process in READY or CREATED state. If no process is found, idle program is selected to be scheduled.
+* Save the new PID and find the new Process Table entry. SP is set as UAPage * 512 + KPTR. PTBR and PTLR registers are restored.
+* PID field in System Status Table is updated.
+* Check if the process is in CREATED state. If CREATED, set SP to UPTR, STATE to RUNNING and MODE FLAG to 0. Then pass execution to user mode using `ireturn`.
+* If READY state, change STATE to RUNNING. Restore BP and return to the caller (here, it would be timer interrupt. Int 10 also calls the scheduler but execution won't return back to int 10).
 
-### 2. spl_progs/os_startup.spl
+### 2. spl_progs/boot_module.spl
 
-The OS startup code is modified to load only the boot module and idle program to disk. The boot module is then invoked, after which, the tables for the idle program is initialised. The STATE of the program is set to RUNNING as it is scheduled to run first. The PTBR and PTLR registers are set and the ireturn statement passes control to the user programs.
+The boot module is modified to load the `evenNum.xsm` executable and also to set up its Page Table and Process Table entries. The STATE field of the rest of the Process Table entries are set to TERMINATED.
+
+### 3. spl_progs/sample_timer.spl
+
+The timer ISR is modified to invoke the schefduler module. The scheduling is done solely by the scheduler and as such, the old primitive scheduling used in the timer is discarded. The timer is expected to backup the user context and set the STATE of the process from RUNNING to READY. After the call to the scheduler, the user context of the newly scheduled process is restored (assuming that scheduler returns control back to timer, else the control is directly passed to the user mode from the scheduler). SP is updated with the value in Page Table. The MODE flag is set to 0 and then the control is passed to user mode.
+
+### 4. spl_progs/interrupt_10.spl
+
+The ExpL compiler sets every user program to execute the `INT 10` instruction at the end of the execution. Prior to thus stage, the int 10 ISR contained only a halt instruction. The int 10 routine is rewritten as follows,
+
+* Change state of the invoking process to TERMINATED.
+* Iterate over all Process Table Entries to check whether all processes except idle are terminated. In that case, halt the system. Else, call the scheduler. There will be no return to this process as the scheduler will not schedule this process again.
+
+### 5. expl_progs/evenNUm.expl
+
+A user program written in ExpL language that prints even numbers from 1-100. This is loaded as follows using `xfs-interface`.
+```
+load --exec <path_to_file.xsm>
+```
+The file is loaded to disk block 69 (dump the contents of INODE TABLE to get this).
+
+| Stack | 84 - 85 |
+| Heap | 86 - 87 |
+| UAPage | 88 |
+
+### 6. expl_progs/oddNum.expl
+
+A user program written in ExpL language which prints odd numbes from 1-100. This is loaded as the init program.
+
+| Stack | 76 - 77 |
+| Heap | 78 - 79 |
+| UAPage | 80 |
 
 ### Unchanged files:
 
@@ -20,7 +58,8 @@ This is the idle program written in ExpL language. It contains an infininte loop
 
 As idle program doesn't use library functions or dynamic memory allocation, it doesn't need library or heap pages. Only one page is needed for stack, as its memory requirements are low.
 
-Stack is allocated at 81 and User Page Area allocated at page 82.
+| Stack | 81 |
+| UAPage | 82 |
 
 For details, see Disk and Memory layout below or [click here](https://exposnitc.github.io/os_implementation.html).
 
@@ -34,22 +73,23 @@ UPTR of current process is set. The SP set to UArea Page * 512 - 1 for kernel st
 
 (Remains unchanged as in stage 12)
 
-### 3. expl_progs/numbers.expl
+### 3. spl_progs/haltprog.spl
 
-This is the user program written in ExpL language which prints the first 50 natural numbers. This program also uses exposcall() function to write the result on to the screen. The ExpL compiler translates the exposcall() to the corresponding low level system call and produces `numbers.xsm` in the same directory, on compiling.
+A program with just a "halt" instruction. Used as the exception handler.
 
-Stack pages: 76, 77. User Area Page: 80.
+(Remains unchanged as in stages 6-13)
 
-(Remains unchanged as in stage 11-12)
-
-### 4. spl_progs/haltprog.spl
-
-A program with just a "halt" instruction. Used both as an interrupt 10 routine and an exception handler. (Remains unchanged as in stages 6-12)
-
-### 5. spl_progs/console_output.spl
+### 4. spl_progs/console_output.spl
 
 The interrupt 7 routine programs used for printing to the terminal screen. This program requires 3 arguments- argument 1 is -2 (file descriptor for terminal), argument 2 is the value to be printed and argument 3 is could be anything (exists solely for the purpose of convention). If argument 1 is -2, prints value to the terminal, else, returns -1.
-(Remains unchanged as in stage 11-12)
+
+(Remains unchanged as in stage 11-13)
+
+### 5. spl_progs/os_startup.spl
+
+The OS startup code is modified to load only the boot module and idle program to disk. The boot module is then invoked, after which, the tables for the idle program is initialised. The STATE of the program is set to RUNNING as it is scheduled to run first. The PTBR and PTLR registers are set and the ireturn statement passes control to the user programs.
+
+(Remains unchanged as in stage 13)
 
 ## Compiling SPL Programs
 
@@ -70,7 +110,7 @@ Then run the bash script:
 $ ./run.sh
 ```
 
-This will generate corresponding xsm files: `odd_numbers.xsm`(init program), `idle.xsm` in the `expl_progs` directory and `boot_module.xsm`, `haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm`, `console_output.xsm` in the `spl_progs` directory.
+This will generate corresponding xsm files: `oddNum.xsm`(init program), `evenNum.xsm`, `idle.xsm` in the `expl_progs` directory and `module_boot.xsm`, `module_scheduler.xsm`, `interrupt_10.xsm`, `haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm`, `console_output.xsm` in the `spl_progs` directory.
 
 Then run:
 

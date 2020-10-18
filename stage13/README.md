@@ -1,6 +1,6 @@
 # Stage 13: Boot Module
 
-In this stage, we will immplement boot module. The OS startup code is provided only with one memory page. So, the OS code is split into modules. The boot module contain code for initializing several data structures. The OS stratup code only creates the idle process and set SP to the kernel stack of idle process.
+In this stage, we will implement boot module. The OS startup code is provided only with one memory page. So, the OS code is split into modules. The boot module contain code for initializing several data structures. The OS stratup code only creates the idle process and set SP to the kernel stack of idle process.
 
 ## Files Included
 
