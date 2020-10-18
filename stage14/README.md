@@ -164,10 +164,10 @@ You will get an output of numbers from 1 - 100 in order if the value of timer is
 
 ## Explanation
 
-1. [Disk and Memory Organization](https://exposnitc.github.io/os_implementation.html) page.
+1. [Disk and Memory Organization](https://exposnitc.github.io/os_implementation.html)
 
-2. [Page Table](https://exposnitc.github.io/arch_spec-files/paging_hardware.html) for more info.
+2. [Page Table](https://exposnitc.github.io/arch_spec-files/paging_hardware.html)
 
-3. [Process Table](https://exposnitc.github.io/os_design-files/process_table.html).
+3. [Process Table](https://exposnitc.github.io/os_design-files/process_table.html)
 
-4. [System Status Table](https://exposnitc.github.io/os_design-files/mem_ds.html#ss_table).
+4. [System Status Table](https://exposnitc.github.io/os_design-files/mem_ds.html#ss_table)
