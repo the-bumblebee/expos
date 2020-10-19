@@ -3,20 +3,28 @@ alias funcNum R1;
 alias currentPID R2;
 alias returnValue R0;
 
+// Check if function number is 8 for Acquire Terminal
 if (funcNum == 8) then
+    // If terminal busy, call scheduler
     if ([TERMINAL_STATUS_TABLE] == 1) then
         [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_TERMINAL;
         multipush(R0, R1, R2);
         call BOOT_MODULE;
         multipop(R0, R1, R2);
     endif;
+    // This is executed only when terminal becomes free and the process acquire the terminal
+    // STATUS is set to 1 and PID is set to the current PID in Terminal Status Table
     [TERMINAL_STATUS_TABLE] = 1;
     [TERMINAL_STATUS_TABLE + 1] = currentPID;
     return;
 else
+    // Check if function number is 9 for Release Terminal
     if (funcNum == 9) then
+        // Check if PID in R2 and System Status Table matches. If not return -1.
         if ([TERMINAL_STATUS_TABLE + 1] == currentPID) then
+            // STATUS set to 0 Terminal Status Table
             [TERMINAL_STATUS_TABLE] = 0;
+            // Setting STATUS of processes having WAIT_TERMINAL to READY
             alias newPID R3;
             alias newProcessTable R4;
             newPID = 1;
@@ -28,6 +36,7 @@ else
                 newPID = newPID + 1;
                 newProcessTable = PROCESS_TABLE + (newPID * 16);
             endwhile;
+            // Setting return vale as 0 to show success
             returnValue = 0;
             return;
         else

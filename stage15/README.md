@@ -1,27 +1,61 @@
 # Stage 15: Resource Manager Module (Module 0)
 
-The Resource Manager Module manage resources like terminal, disk, inode, etc. among different processes.
+The Resource Manager module manages resources like terminal, disk, inode, etc. among different processes. Before using a resource, a process has to acquire the required resource by invoking the resource manager. A process can acquire a resource if the resource is not already acquired by some other process. If the resource requested by a process is not available, then that process has to be blocked until the resource becomes free. In the meanwhile, other processes may be scheduled.
 
-
-// Acquire term-8 release -9
-// argument r1, r2  r3, r1 func number, r2 pid
-// not directly invoked from writ sys call
-// invokes rerminal wrote func in device manafer module, r1 func number 3, r2 pid, r3 word
-// invoker must save registers in use before invoke
-// return value r0 0
-// invoker extract return val, pop back reg, resume 
-
-There is one important conceptual point to be explained here relating to resource acquisition. The Acquire Terminal function described above waits in a loop, in which it repeatedly invokes the scheduler if the terminal is not free. This kind of a waiting loop is called a busy loop or busy wait. Why can't the process wait just once for a resource and simply proceed to acquire the resource when it is scheduled? In other words, what is the need for a wait in a loop? Pause to think before you read the explanation below. You will encounter such busy loops several times in this project, inside various module functions described in later stages.
+We will also implement the Device Manager module (module 4) with Terminal Write function.
 
 ## Files Included
 
 ### 1. spl_progs/console_output.spl
 
-### 2. spl_progs/module_boot.spl
+The interrupt 7 routine is modified to invoke the Terminal Write function present in the Device Manager module. We will only be replacing the `print` statement with a couple lines of code.
 
-### 3. spl_progs/module_device_manager.spl
+* Push all the registers in use within the interrupt routine till now.
+* Store the function number of Terminal Write (3) in R1, PID of the current process in R2 and word to be printed in R3.
+* Call Device Manager module (module 4).
+* Ignore value present in R0 as Terminal Write doesn't have any return value.
+* Pop the registers back.
 
-### 4. spl_progs/module_resource_manager.spl
+### 2. spl_progs/module_device_manager.spl
+
+* If the function number provided in R1 is 3 then continue below steps else return.
+* We will now be calling Acquire Terminal. Save all the registers in use. Store 8 (function number of Acquire Terminal) in R1 and current PID in R2.
+* Call Resource Manager module (module 0). If the terminal is busy, the Resorce Manager moduler calls the scheduler and only when the terminal is available and the process acquires it, does it return back to Device Manager. The actual writing to terminal happens within the Resource Manager module.
+* Ignore value present in R0 as Acquire Terminal does not have any return value.
+* Restore the registers.
+* Now, we will call Release Terminal. Save the registers in use. Store 9 (function number of Release Terminal) in R1 and current PID in R2.
+* Call Resource Manager module (module 0).
+* Return value will be in R0. Store this value in another register.
+* Restore the registers.
+* Return using the `return` statement.
+
+### 3. spl_progs/module_resource_manager.spl
+
+* For Acquire Terminal function, check if function number in R1 is 8. 
+
+The current process should wait in a loop until the terminal is free. That is, if the STATUS field of Terminal Status Table is 1, change STATE of the process to WAIT_TERMINAL. Save the registers in use. Call scheduler to schedule other process as this process is waiting. The code following this, will only be executed after the scheduler schedules the process again. Pop the registers pushed before.
+
+Change STATUS to 1 and PID to current PID in Terminal Status Table.
+
+Return using the `return` statement.
+
+* For Release Terminal function, function number is 9. Also, the current PID given in R2 and PID field should be same. If not store -1 as return value in R0 and return.
+
+Change the STATUS field in Terminal Status Table to 0, indicating the terminal is free.
+
+Update the STATE of the process to READY for all processes which have STATE as WAIT_TERMINAL.
+
+Save 0 in R0 indicating success.
+
+Return to the caller.
+
+### 4. spl_progs/module_boot.spl
+
+* Load Module 0 from disk blocks 53, 54 to memory pages 40, 41.
+
+* Load Module 4 from disk blocks 61, 62 to memory pages 48, 49.
+
+* Initialize the STATUS field in the Terminal Status Table to 0 indicating the terminal is free.
 
 ### Unchanged files:
 
@@ -87,6 +121,10 @@ $ ./xfs-interface run ~/expos-roadmap/stage14/batch-xfs
 ```
 
 This will load the compiled spl programs and the user programs to disk.
+
+### Note: 
+
+A bash script `rm.sh` is provided to remove all the `xsm` files.
 
 ## Running XSM Machine
 

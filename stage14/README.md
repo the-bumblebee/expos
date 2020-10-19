@@ -1,4 +1,4 @@
-# Stage 14: Round Robin Scheduler
+# Stage 14: Round Robin Scheduler (Module 5)
 
 In this stage, we will implement the round robin scheduler module. Another user program is hand created and along with init and idle, this is also loaded.
 
@@ -15,7 +15,7 @@ In this stage, we will implement the round robin scheduler module. Another user 
 * Check if the process is in CREATED state. If CREATED, set SP to UPTR, STATE to RUNNING and MODE FLAG to 0. Then pass execution to user mode using `ireturn`.
 * If READY state, change STATE to RUNNING. Restore BP and return to the caller (here, it would be timer interrupt. Int 10 also calls the scheduler but execution won't return back to int 10).
 
-### 2. spl_progs/boot_module.spl
+### 2. spl_progs/module_boot.spl
 
 The boot module is modified to load the `evenNum.xsm` executable and also to set up its Page Table and Process Table entries. The STATE field of the rest of the Process Table entries are set to TERMINATED.
 
