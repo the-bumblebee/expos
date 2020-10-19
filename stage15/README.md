@@ -101,7 +101,7 @@ A bash script, `run.sh`, containing commands for compiling the expl programs and
 First, set executable permission for the bash script:
 
 ```
-$ cd ~/expos-roadmap/stage14
+$ cd ~/expos-roadmap/stage15
 $ sudo chmod +x run.sh
 ```
 
@@ -117,7 +117,7 @@ Then run:
 
 ```
 $ cd ~/myexpos/xfs-interface
-$ ./xfs-interface run ~/expos-roadmap/stage14/batch-xfs
+$ ./xfs-interface run ~/expos-roadmap/stage15/batch-xfs
 ```
 
 This will load the compiled spl programs and the user programs to disk.
