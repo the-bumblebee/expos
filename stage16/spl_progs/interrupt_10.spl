@@ -8,7 +8,7 @@ currentProcessTable = PROCESS_TABLE + (currentPID * 16);
 [currentProcessTable + 4] = TERMINATED;
 
 
-// 2. Iterate through all processes with idle at the last to check if TERMINATED
+// 2. Iterate through all with idle at the last to check if TERMINATED
 alias newPID R2;
 newPID = 1;
 alias newProcessTable R3;
@@ -18,7 +18,7 @@ while ([newProcessTable + 4] != CREATED && [newProcessTable + 4] != READY) do
     newProcessTable = PROCESS_TABLE + (newPID * 16);
 endwhile;
 
-// Terminated if newPID == 0, that is,  if idle program only remains
+// Terminated if newPID == 0, that is, idle program only remains
 if (newPID == 0) then
     halt;
 endif;

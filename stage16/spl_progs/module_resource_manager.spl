@@ -7,13 +7,13 @@ alias returnValue R0;
 
 // Check if function number is 8 for Acquire Terminal
 if (funcNum == 8) then
-    // If terminal busy, call scheduler (Should be in a loop, consider a case with 3 programs)
-    while ([TERMINAL_STATUS_TABLE] == 1) do
+    // If terminal busy, call scheduler
+    if ([TERMINAL_STATUS_TABLE] == 1) then
         [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_TERMINAL;
         multipush(R0, R1, R2);
-        call SCHEDULER;
+        call BOOT_MODULE;
         multipop(R0, R1, R2);
-    endwhile;
+    endif;
     // This is executed only when terminal becomes free and the process acquire the terminal
     // STATUS is set to 1 and PID is set to the current PID in Terminal Status Table
     [TERMINAL_STATUS_TABLE] = 1;

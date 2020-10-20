@@ -25,7 +25,8 @@ currentProcessTable = PROCESS_TABLE + (currentPID * 16);
 [currentProcessTable + 14] = PTBR;
 [currentProcessTable + 15] = PTLR;
 
-// 5, 6. Iterate through the process table entries to find a process with READY/CREATED state else select idle
+// 5, 6. Iterate through the process table entries to find process with READY/CEATED state else execution to idle
+alias newPID R2;
 newPID = (currentPID + 1) % 16;
 alias newProcessTable R4;
 newProcessTable = PROCESS_TABLE + (newPID * 16);
