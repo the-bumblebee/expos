@@ -5,11 +5,11 @@ alias funcNum R1;
 alias currentPID R2;
 
 // Check if function number is 3, else return
-if (funcNum == 3) then
+if (funcNum == TERMINAL_WRITE) then
     // Saving the regusters in use
     multipush(R0, R1, R2, R3);
     // Setting function number in R1 as 8 for Acquire Terminal. R2 already has the PID
-    R1 = 8;
+    R1 = ACQUIRE_TERMINAL;
     // Call the Resource Manager Module (Module 0)
     call RESOURCE_MANAGER;
     // Restore registers
@@ -19,7 +19,7 @@ if (funcNum == 3) then
     // Store the registers in use
     multipush(R0, R1, R2, R3);
     // Setting function number in R1 as 9 for Release Terminal. R2 already has the PID
-    R1 = 9;
+    R1 = RELEASE_TERMINAL;
     // Call the Resource Manager Module (Module 0)
     call RESOURCE_MANAGER;
     // Store the return value in R0 in R4 and restore registers

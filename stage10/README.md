@@ -1,4 +1,4 @@
-# Stage 10: Console Output
+# Stage 10: Console Output (Interrupt 7)
 
 In this stage, we will rewrite the user program to enable it to write to the terminal. The main datastructures we are concerned with, here, are the system status table, process table and page table.
 

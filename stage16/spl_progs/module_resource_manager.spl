@@ -1,5 +1,4 @@
 // MODULE 0 - RESOURCE MANAGER
-
 // Function number in R1 and PID in R2
 alias funcNum R1;
 alias currentPID R2;

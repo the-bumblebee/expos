@@ -1,0 +1,15 @@
+int main()
+{
+decl
+    int temp, oddNum, in;
+enddecl
+begin
+    oddNum = 1;
+    temp = exposcall ("Read", -1, in);
+    while ( oddNum < 100 ) do
+        temp = exposcall ("Write", -2, in);
+        oddNum = oddNum + 2;
+    endwhile;
+    return 0;
+end
+}

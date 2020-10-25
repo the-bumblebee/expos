@@ -24,10 +24,17 @@ Each stage in this repo has a `README.md` that explains the required background 
 2. [Experimental Filesystem (eXpFS)](https://exposnitc.github.io/os_spec-files/eXpFS.html)
 3. [XFS Interface](https://exposnitc.github.io/support_tools-files/xfs-interface.html)
 4. [Disk Data Structures](https://exposnitc.github.io/os_design-files/disk_ds.html) (INODE table, Disk Free List, Root File, User Table)
-5. [eXpOS Implementation](https://exposnitc.github.io/os_implementation.html)
-6. [Machine Organization](https://exposnitc.github.io/arch_spec-files/machine_organisation.html)
-7. [Instruction Set](https://exposnitc.github.io/arch_spec-files/instruction_set.html)
-8. [Instruction Execution](https://exposnitc.github.io/Tutorials/xsm-instruction-cycle.html)
+5. [Machine Organization](https://exposnitc.github.io/arch_spec-files/machine_organisation.html)
+6. [Instruction Set](https://exposnitc.github.io/arch_spec-files/instruction_set.html)
+7. [Instruction Execution](https://exposnitc.github.io/Tutorials/xsm-instruction-cycle.html)
+8. [System Call Interface](https://exposnitc.github.io/os_spec-files/systemcallinterface.html)
+
+#### Useful while writing code:
+1. [Disk and Memory Organization](https://exposnitc.github.io/os_implementation.html)
+2. [Page Table](https://exposnitc.github.io/arch_spec-files/paging_hardware.html)
+3. [Process Table](https://exposnitc.github.io/os_design-files/process_table.html)
+4. [System Status Table](https://exposnitc.github.io/os_design-files/mem_ds.html#ss_table)
+5. [Terminal Status Table](https://exposnitc.github.io/os_design-files/mem_ds.html#ts_table)
 
 ## Questions
 
@@ -50,7 +57,7 @@ Each stage in this repo has a `README.md` that explains the required background 
 #### 5. Let's say, you decided to change the number of logical pages to 7, pages 0-1 for library, pages 2-3 for heap, 4th page for code and pages 5-6 for stack. Is this doable? Why/Why not?
 > No. If we were writing the code for both the OS and the user programs in assembly, then this is doable. However, we are using compilers to generate the code. These compilers are designed such that they expect the library pages to be at 0 and 1 (a sys call would translate to CALL 0, the first address of page 0), the heap pages to be at 2 and 3 (the library that handles the dynamic memory expects 2-3 pages to be the heap), the code pages to be at 4,5,6 and 7 (the entry point of the compiled code is 2056 which is at logical page 4) and the stack pages to be at 8 and 9 (the compiler assigns memory for global variables from 4096, which is at page 8).
 
-#### 6. When you wrote Acquire Terminal, you wrote a loop which continuously checked the STATUS in the Terminal Status Table. The loop calls the Scheduler if the terminal is busy (STATUS = 1). Why can't the process just wait once for the resource to be free (here terminal) and simply proceed to acquire the resource when it is cheduled? or why the need for a loop and why not an if statement?
+#### 6. When you wrote Acquire Terminal, you wrote a loop which continuously checked the STATUS in the Terminal Status Table. The loop calls the Scheduler if the terminal is busy (STATUS = 1). Why can't the process just wait once for the resource to be free (here terminal) and simply proceed to acquire the resource when it is acheduled? or what is the need of a loop and why not an if statement?
 
 > When the process invokes the Scheduler waiting for a resource, the Scheduler schedules the process again only after the resource becomes free. If there is only one process waiting for the process an If statement would have sufficed here. But when 2 or more programs are waiting for the resource, a simple If statement wouldn't suffice.
 
@@ -59,3 +66,5 @@ Each stage in this repo has a `README.md` that explains the required background 
 > Now, suppose the first process releases the terminal, in which case, the STATUS of the other 2 processes are changed to READY. Now, if the second process is scheduled, it could acquire the terminal (Till now an If would have sufficed). But, when the terminal is still in use by the second process and the third process was scheduled, the third process would go on to acquire the terminal without checking the STATUS of the Terminal Status Table (there should be another check now inside the Resource Manager, in other words, we need a loop). This would be chaotic. And this is why, a loop is used instead of an If statement. Only when the STATUS is 0 (terminal is free) would it break out of the loop and acquire it.
 
 > After the first process, there is a "race condition" and the first process that's scheduled right after the terminal becomes free acquires the terminal. (Such busy loops will be encountered further down the road).
+
+#### 7. Why do you need to save the user context for an interrupt and not for a system call?
