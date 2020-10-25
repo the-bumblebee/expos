@@ -131,7 +131,7 @@ Changes are made to load the Console Interrupt Handler and the Interrupt 6 Routi
 
 ### 8. spl_progs/interrupt_10.spl
 
-### 9. spl_progs/console_output.spl
+### 9. spl_progs/interrupt_console_output.spl
 
 ### 10. spl_progs/module_resource_manager.spl
 
