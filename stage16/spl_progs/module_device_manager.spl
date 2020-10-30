@@ -3,8 +3,24 @@
 alias funcNum R1;
 alias currentPID R2;
 
-// Check if function number is 3, else return
+// Check if function number is 3
 if (funcNum == TERMINAL_WRITE) then
+    call TerminalWrite;
+    return;
+endif;
+
+// Checks if function number is 4
+if (funcNum == TERMINAL_READ) then
+    call TerminalRead;
+    return;
+endif;
+
+// Return if wrong function number
+return;
+
+
+
+TerminalWrite:
     // Saving the registers in use
     multipush(R0, R1, R2, R3);
     // Setting function number in R1 as 8 for Acquire Terminal. R2 already has the PID
@@ -26,36 +42,33 @@ if (funcNum == TERMINAL_WRITE) then
     returnValue = R0;
     multipop(R0, R1, R2, R3);
     return;
-else
-    if (funcNum == TERMINAL_READ) then
-        multipush(R0, R1, R2, R3);
-        // Setting function number in R1 as 8 for Acquire Terminal. R2 already has the PID
-        R1 = ACQUIRE_TERMINAL;
-        // Call the Resource Manager Module (Module 0)
-        call RESOURCE_MANAGER;
-        // Restore registers
-        multipop(R0, R1, R2, R3);
 
-        // IN statemment
-        read;
-        // Change STATE of the process to WAIT_TERMINAL
-        [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_TERMINAL;
 
-        multipush(R0, R1, R2, R3);
-        // Invoke Scheduler
-        call SCHEDULER;
+TerminalRead:
+    multipush(R0, R1, R2, R3);
+    // Setting function number in R1 as 8 for Acquire Terminal. R2 already has the PID
+    R1 = ACQUIRE_TERMINAL;
+    // Call the Resource Manager Module (Module 0)
+    call RESOURCE_MANAGER;
+    // Restore registers
+    multipop(R0, R1, R2, R3);
 
-        // Following steps are executed after return from Scheduler
-        // Restore register
-        multipop(R0, R1, R2, R3);
-        // Logical address of word is in R3. Convert this to physical address.
-        alias physicalWordAddress R4;
-        // physicalPage*512 + offset
-        physicalWordAddress = [PTBR + 2 * (R3 / 512)] * 512 + (R3 % 512);
-        // Store value stored in INPUT BUFFER of process to this location
-        [physicalWordAddress] = [PROCESS_TABLE + (currentPID * 16) + 8];
-        return;
-    else
-        return;
-    endif;
-endif;
+    // IN statemment
+    read;
+    // Change STATE of the process to WAIT_TERMINAL
+    [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_TERMINAL;
+
+    multipush(R0, R1, R2, R3);
+    // Invoke Scheduler
+    call SCHEDULER;
+
+    // Following steps are executed after return from Scheduler
+    // Restore register
+    multipop(R0, R1, R2, R3);
+    // Logical address of word is in R3. Convert this to physical address.
+    alias physicalWordAddress R4;
+    // physicalPage*512 + offset
+    physicalWordAddress = [PTBR + 2 * (R3 / 512)] * 512 + (R3 % 512);
+    // Store value stored in INPUT BUFFER of process to this location
+    [physicalWordAddress] = [PROCESS_TABLE + (currentPID * 16) + 8];
+    return;

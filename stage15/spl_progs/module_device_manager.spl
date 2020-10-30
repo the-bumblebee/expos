@@ -6,6 +6,14 @@ alias currentPID R2;
 
 // Check if function number is 3, else return
 if (funcNum == TERMINAL_WRITE) then
+    call TerminalWrite;
+    return;
+else
+    return;
+endif;
+
+
+TerminalWrite:
     // Saving the regusters in use
     multipush(R0, R1, R2, R3);
     // Setting function number in R1 as 8 for Acquire Terminal. R2 already has the PID
@@ -27,6 +35,3 @@ if (funcNum == TERMINAL_WRITE) then
     returnValue = R0;
     multipop(R0, R1, R2, R3);
     return;
-else
-    return;
-endif;
