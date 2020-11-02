@@ -15,28 +15,28 @@
 
 ## Files Included
 
-### spl_progs/module_device_manager.spl
+#### spl_progs/module_device_manager.spl
 
-### spl_progs/module_resource_manager.spl
+#### spl_progs/module_resource_manager.spl
 
-### spl_progs/disk_interrupt_handler.spl
+#### spl_progs/disk_interrupt_handler.spl
 
-### spl_progs/interrupt_9.spl
+#### spl_progs/interrupt_9.spl
 
 
 
-### spl_progs/module_boot.spl
+#### spl_progs/module_boot.spl
 
-### Unchanged files:
+#### Unchanged files:
 
-### expl_progs/idle.expl
+#### expl_progs/idle.expl
 
 | Region | Memory Pages |
 |---|---|
 | Stack | 81 |
 | UAPage | 82 |
 
-### expl_progs/exec.expl
+#### expl_progs/exec.expl
 
 | Region | Memory Pages |
 |---|---|
@@ -44,29 +44,29 @@
 | Heap | 78 - 79 |
 | UAPage | 80 |
 
-### expl_progs/numbers.expl
+#### expl_progs/numbers.expl
 
-### expl_progs/hello.expl
+#### expl_progs/hello.expl
 
-### spl_progs/console_interrupt_handler.spl
+#### spl_progs/console_interrupt_handler.spl
 
-### spl_progs/haltprog.spl
+#### spl_progs/haltprog.spl
 
-### spl_progs/module_scheduler.spl
+#### spl_progs/module_scheduler.spl
 
-### spl_progs/os_startup.spl
+#### spl_progs/os_startup.spl
 
-### spl_progs/sample_timer.spl
+#### spl_progs/sample_timer.spl
 
-### spl_progs/interrupt_10.spl
+#### spl_progs/interrupt_10.spl
 
-### spl_progs/interrupt_console_output.spl
+#### spl_progs/interrupt_console_output.spl
 
-### spl_progs/interrupt_console_input.spl
+#### spl_progs/interrupt_console_input.spl
 
-### spl_progs/module_process_manager.spl
+#### spl_progs/module_process_manager.spl
 
-### spl_progs/module_memory_manager.spl
+#### spl_progs/module_memory_manager.spl
 
 ## Compiling SPL Programs
 
