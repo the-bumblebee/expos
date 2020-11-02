@@ -1,0 +1,134 @@
+// INERRUPT 9 - EXEC SYSTEM CALL
+
+// Saving user SP to a register
+// Changing stack to kernel stack
+alias userSP R0;
+alias currentPID R1;
+alias currentProcessTable R2;
+userSP = SP;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+SP = [currentProcessTable + 11] * 512 - 1;
+
+// Setting MODE field in Process Table to 9 (Exec Sytem Call)
+[currentProcessTable + 9] = INT_EXEC;
+
+// Extracting filename from user stack (The only argument to Exec)
+alias fileName R3;
+fileName = [[PTBR + 2 * ((userSP - 4) / 512)] * 512 + ((userSP - 4) % 512)];
+
+// Checking to see if the filename exists in disk
+alias inodeIndex R5;
+inodeIndex = 0;
+while ([INODE_TABLE + (inodeIndex * 16) + 1] != fileName && inodeIndex < 60) do
+    inodeIndex = inodeIndex + 1;
+endwhile;
+// If not change MODE back to 0, SP to userSP and return with return value -1
+if (inodeIndex == 60 || [INODE_TABLE + (inodeIndex * 16)] != EXEC) then
+    alias returnVal R0;
+    [currentProcessTable + 9] = 0;
+    SP = userSP;
+    print "No file name!";
+    returnVal = -1;
+    ireturn;
+endif;
+
+// If file found, current process is exited
+multipush (R1, R2, R3, R4);
+R1 = EXIT_PROCESS;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+call PROCESS_MANAGER;
+multipop (R1, R2, R3, R4);
+
+// Note: Memory free list and Mem count should be set up for all the user processes
+// Incrementing in memory free list to reallocate UAPage
+[MEMORY_FREE_LIST + [currentProcessTable + 11]] = [MEMORY_FREE_LIST + [currentProcessTable + 11]] + 1;
+// Decremennting MEM_FREE_COUNT
+[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
+
+
+// Setting the Pre-Process table
+alias preProcessEntry R6;
+preProcessEntry = 0;
+while (preProcessEntry < 8) do
+    [[currentProcessTable + 11] * 512 + (512 - 16) + (2 * preProcessEntry)] = -1;
+    preProcessEntry = preProcessEntry + 1;
+endwhile;
+
+
+//SP set to start of UAPage to initialize kernel stack of the new process
+SP = [currentProcessTable + 11] * 512 - 1;
+
+// New process uses the same PID
+// Set STATE to RUNNING and save inodeIndex to Process Table
+[currentProcessTable + 4] = RUNNING;
+[currentProcessTable + 7] = inodeIndex;
+
+//Allocate new pages and set page table entries
+// Library Pages
+[PTBR + 0] = 63;
+[PTBR + 1] = "0100";
+[PTBR + 2] = 64;
+[PTBR + 3] = "0100";
+
+// Allocating heap and stack pages
+//Heap
+multipush (R0, R1, R2, R3, R4);
+// Heap
+R1 = GET_FREE_PAGE;
+call MEMORY_MANAGER;
+[PTBR + 4] = R0;
+[PTBR + 5] = "0110";
+
+R1 = GET_FREE_PAGE;
+call MEMORY_MANAGER;
+[PTBR + 6] = R0;
+[PTBR + 7] = "0110";
+
+// Stack
+R1 = GET_FREE_PAGE;
+call MEMORY_MANAGER;
+[PTBR + 16] = R0;
+[PTBR + 17] = "0110";
+
+R1 = GET_FREE_PAGE;
+call MEMORY_MANAGER;
+[PTBR + 18] = R0;
+[PTBR + 19] = "0110";
+
+multipop (R0, R1, R2, R3, R4);
+
+// Code pages
+alias codePageIndex R6;
+codePageIndex = 0;
+multipush (R0, R1, R2, R3);
+while ([INODE_TABLE + (inodeIndex * 16) + 8 + codePageIndex] != -1 && codePageIndex < 4) do
+    multipush (R4, R5, R6);
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
+    multipop (R4, R5, R6);
+    [PTBR + 2 * (4 + codePageIndex)] = R0;
+    [PTBR + 2 * (4 + codePageIndex) + 1] = "0100";
+
+    // Invoking Disk Load function of Device Manager
+    R1 = DISK_LOAD;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = R0;
+    R4 = [INODE_TABLE + (inodeIndex * 16) + 8 + codePageIndex];
+    call DEVICE_MANAGER; // loadi(R0, [INODE_TABLE + (inodeIndex * 16) + 8 + codePageIndex]);
+
+    codePageIndex = codePageIndex + 1;
+endwhile;
+
+multipop (R0, R1, R2, R3);
+
+// Store entry point on top of user stack
+[[PTBR + 16] * 512] = [[PTBR + 8] * 512 + 1];
+
+// Change SP to user stack
+SP = 8 * 512;
+
+// Change MODE back to 0
+[currentProcessTable + 9] = 0;
+
+ireturn;

@@ -1,46 +1,29 @@
-# Stage 17: Program Loader
+# Stage 18: Disk Interrupt Handler
 
-* New process from a user process "Exec" sys call
-* New process same PID as calling process
-* Mem Free List for all pages of all user processes set
-* MEM_FREE_COUNT set
+* LOAD instr- page number and block number
+* Disk Status Table - Acquire Disk
+* exec load instead of loadi
+* Disk interrupt handler
+* Exec modified with Disk load instead of loadi
+* Initialize per-process tablle of idle in boot
+* Load disk int handler from disk to memory in boot
+* Initialize STATUS field of Disk Status Table to 0
 
 
-Here, we will be implementing the "Exec" system call.
-
-#### Exec System Call (Interupt 9)
-
- It has only one argument, which is the file name. The system call checks for the file in the disk and also checks if it is a valid eXpOS executable. If so, the "Exec" call destroys the invoking process, loads the executable from disk.
-
- Exec first deallocates all the pages used by invoking process. These include the 2 heap pages, 2 stack pages, the code pages occupied by the process and the user area page. It also invalidates the page table entries. This is done by calling the Exit Process function from the Process Manager Module. Since Exec system call runs in kernel mode and needs a kernel stack for its own execution, Exec reclaims the same user area page after coming back from the Exit Process function.
-
-#### Free User Area Page (Process Manager Module, Function number = 2)
-#### Exit Process (Process Manager Module, Function number = 3)
-#### Exit Process (Process Manager Module, Function number = 4)
-#### Get Free Page (Memory Manager Module, Function number = 1)
-#### Release Page (Memory Manager Module, Function number = 2)
+#### Disk Load (Device Manager Module, Function number = 2)
+#### Acquire Disk (Resource Manager Module, Function number = 3)
 
 ## Files Included
 
+### spl_progs/module_device_manager.spl
+
+### spl_progs/module_resource_manager.spl
+
+### spl_progs/disk_interrupt_handler.spl
+
 ### spl_progs/interrupt_9.spl
 
-### spl_progs/module_process_manager.spl
 
-### spl_progs/module_memory_manager.spl
-
-### expl_progs/exec.expl
-
-This is loaded as the init program. The program takes in a string and executes the file corresponding to the string given, using the "Exec" system call. If the file is not present in the disk, it will exit by displaying a message.
-
-| Region | Memory Pages |
-|---|---|
-| Stack | 76 - 77 |
-| Heap | 78 - 79 |
-| UAPage | 80 |
-
-### expl_progs/numbers.expl
-
-### expl_progs/hello.expl
 
 ### spl_progs/module_boot.spl
 
@@ -53,7 +36,17 @@ This is loaded as the init program. The program takes in a string and executes t
 | Stack | 81 |
 | UAPage | 82 |
 
-### spl_progs/module_device_manager.spl
+### expl_progs/exec.expl
+
+| Region | Memory Pages |
+|---|---|
+| Stack | 76 - 77 |
+| Heap | 78 - 79 |
+| UAPage | 80 |
+
+### expl_progs/numbers.expl
+
+### expl_progs/hello.expl
 
 ### spl_progs/console_interrupt_handler.spl
 
@@ -69,9 +62,11 @@ This is loaded as the init program. The program takes in a string and executes t
 
 ### spl_progs/interrupt_console_output.spl
 
-### spl_progs/module_resource_manager.spl
-
 ### spl_progs/interrupt_console_input.spl
+
+### spl_progs/module_process_manager.spl
+
+### spl_progs/module_memory_manager.spl
 
 ## Compiling SPL Programs
 
@@ -82,7 +77,7 @@ A bash script, `run.sh`, containing commands for compiling the expl programs and
 First, set executable permission for the bash script:
 
 ```
-$ cd ~/expos-roadmap/stage17
+$ cd ~/expos-roadmap/stage18
 $ sudo chmod +x run.sh
 ```
 
@@ -98,7 +93,7 @@ Then run:
 
 ```
 $ cd ~/myexpos/xfs-interface
-$ ./xfs-interface run ~/expos-roadmap/stage17/batch-xfs
+$ ./xfs-interface run ~/expos-roadmap/stage18/batch-xfs
 ```
 
 This will load the compiled spl programs and the user programs to disk.
@@ -133,3 +128,5 @@ Then enter either `hello.xsm` or `numbers.xsm` to run the corresponding process.
 4. [System Status Table](https://exposnitc.github.io/os_design-files/mem_ds.html#ss_table)
 
 5. [Terminal Status Table](https://exposnitc.github.io/os_design-files/mem_ds.html#ts_table)
+
+6. [Disk Status Table](https://exposnitc.github.io/os_design-files/mem_ds.html#ds_table)
