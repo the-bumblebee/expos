@@ -39,7 +39,7 @@ SP = [newProcessTable + 11] * 512 + [newProcessTable + 12];
 
 // 8. Restore PTBR, PTLR of the new process
 PTBR = [newProcessTable + 14];
-PTLR = [newProcessTable + 15];
+PTLR = [newProcessTable + 15];  
 // 9. Set newPID in system status table
 [SYSTEM_STATUS_TABLE + 1] = newPID;
 

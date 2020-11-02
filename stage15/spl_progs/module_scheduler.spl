@@ -30,7 +30,7 @@ alias newPID R2;
 newPID = (currentPID + 1) % 16;
 alias newProcessTable R4;
 newProcessTable = PROCESS_TABLE + (newPID * 16);
-while ([newProcessTable + 4] == TERMINATED) do
+while ([newProcessTable + 4] != CREATED && [newProcessTable + 4] != READY) do
     newPID = (newPID + 1) % 16;
     newProcessTable = PROCESS_TABLE + (newPID * 16);
 endwhile;
