@@ -44,7 +44,7 @@ This is loaded as the init program. The program takes in a string and executes t
 
 #### spl_progs/module_boot.spl
 
-#### Unchanged files:
+### Unchanged files:
 
 #### expl_progs/idle.expl
 

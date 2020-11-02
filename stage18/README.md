@@ -27,7 +27,7 @@
 
 #### spl_progs/module_boot.spl
 
-#### Unchanged files:
+### Unchanged files:
 
 #### expl_progs/idle.expl
 
