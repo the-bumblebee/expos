@@ -1,0 +1,66 @@
+// INTERRUPT 6 - READ SYSTEM CALL
+// Since system call, registers are backed up in the user process
+
+// MODE FLAG in process table set to the system call number (7 for read)
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 7;
+
+
+alias userSP R0;
+userSP = SP;
+
+// Save value of SP in user SP field in process table
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 13] = userSP;
+
+// Setting SP to beginning of kernel stack (UAPage*512-1)
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 11] * 512 - 1;
+
+alias physicalPageNum R1;
+alias offset R2;
+alias fileDescPhysicalAddr R3;
+
+// Computing the physical page no. of user stack, since in kernel mode
+physicalPageNum = [PTBR + 2 * ((userSP - 4)/ 512)];
+// Calculating the offset. (userP - 4) conatains the first argument.
+// That is, the file descriptor is at (userSP - 4)
+offset = (userSP - 4) % 512;
+fileDescPhysicalAddr = (physicalPageNum * 512) + offset;
+alias fileDescriptor R4;
+fileDescriptor=[fileDescPhysicalAddr];
+
+// Checking if file descriptor valid
+if (fileDescriptor != -1) then
+    // Returns -1 if file descriptor invalid
+    alias physicalAddrRetVal R5;
+    physicalAddrRetVal = ([PTBR + 2 * ((userSP - 1) / 512)] * 512) + ((userSP - 1) % 512);
+    [physicalAddrRetVal] = -1;
+else
+    // Retrieve word address from stack (second argument - [userSP - 3])
+    alias wordAddress R5;
+    wordAddress = [[PTBR + 2 * ((userSP - 3) / 512)] * 512 + ((userSP - 3) % 512)];
+
+    // Store all the registers in use to the stack.
+    multipush(R0, R1, R2, R3, R4, R5);
+    // Store function number of Terminal Read(4) in R1, PID to R2 and word address in R3.
+    R1 = TERMINAL_READ;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = wordAddress;
+    // Call Device Manager Module (Module 4)
+    call DEVICE_MANAGER;
+    // Terminal Read has no return value
+    multipop(R0, R1, R2, R3, R4, R5);
+
+    // Return value indicating success
+    alias physicalAddrRetVal R6;
+    physicalAddrRetVal = ([PTBR + 2 * (userSP - 1)/ 512] * 512) + ((userSP - 1) % 512);
+    [physicalAddrRetVal] = 0;
+
+endif;
+
+// Setting SP back to user SP
+SP = userSP;
+
+// Resetting MODE FLAG to 0 which indicates process running in user mode
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 9] = 0;
+
+// Passing control back to the user program
+ireturn;

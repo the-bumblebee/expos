@@ -1,0 +1,42 @@
+// CONSOLE INTERRUPT HANDLER
+
+// Save SP to UPTR
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+// Set SP to (UAPage * 512 - 1)
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+// ONLY USE REGISTERS HEREAFTER
+// Backup user context
+backup;
+
+// PID and Process Table of the process that is requesting input is obtained
+alias reqPID R0;
+alias reqProcessTable R1;
+reqPID = [TERMINAL_STATUS_TABLE + 1];
+reqProcessTable = PROCESS_TABLE + (reqPID * 16);
+
+breakpoint;
+// INPUT BUFFER in Process Table is set to the value contained in P0
+[reqProcessTable + 8] = P0;
+breakpoint;
+
+// Save registers in use
+multipush(R0, R1);
+
+// R1 -> Function number for Release Terminal (9)
+// R2 -> reqPID (Registers could be overwritten and hence value directly obtained)
+R1 = RELEASE_TERMINAL;
+R2 = [TERMINAL_STATUS_TABLE + 1];
+// Invoke Resource Manager
+call RESOURCE_MANAGER;
+
+// Restore registers
+multipop(R0, R1);
+
+// DO NOT USE REGISTERS HEREAFTER
+// Restore user context
+restore;
+
+// Set SP to UPTR field in Process Table
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+ireturn;

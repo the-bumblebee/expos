@@ -14,6 +14,5 @@ cd ~/myexpos/spl/
 ./spl ~/expos-roadmap/stage16/spl_progs/os_startup.spl
 ./spl ~/expos-roadmap/stage16/spl_progs/sample_timer.spl
 cd ../expl/
-./expl ~/expos-roadmap/stage16/expl_progs/oddNum.expl
-./expl ~/expos-roadmap/stage16/expl_progs/evenNum.expl
 ./expl ~/expos-roadmap/stage16/expl_progs/idle.expl
+./expl ~/expos-roadmap/stage16/expl_progs/gcd.expl

@@ -92,7 +92,17 @@ An interrupt is raised when input is entered into the console. This  is handled 
 
 * Control passed back to the user program.
 
-### 4. spl_progs/module_boot.spl
+### 4. expl_progs/gcd.expl
+
+This is the init program and prompts the user for 2 numbers. This the outputs the GCD of the two numbers using Euclidean algorithm.
+
+| Region | Memory Pages |
+|---|---|
+| Stack | 76 - 77 |
+| Heap | 78 - 79 |
+| UAPage | 80 |
+
+### 5. spl_progs/module_boot.spl
 
 Changes are made to load the Console Interrupt Handler and the Interrupt 6 Routine (Read System Call) from disk to memory.
 
@@ -105,35 +115,19 @@ Changes are made to load the Console Interrupt Handler and the Interrupt 6 Routi
 | Stack | 81 |
 | UAPage | 82 |
 
-### 2. expl_progs/evenNum.expl
+### 2. spl_progs/haltprog.spl
 
-| Region | Memory Pages |
-|---|---|
-| Stack | 84 - 85 |
-| Heap | 86 - 87 |
-| UAPage | 88 |
+### 3. spl_progs/module_scheduler.spl
 
-### 3. expl_progs/oddNum.expl
+### 4. spl_progs/os_startup.spl
 
-| Region | Memory Pages |
-|---|---|
-| Stack | 76 - 77 |
-| Heap | 78 - 79 |
-| UAPage | 80 |
+### 5. spl_progs/sample_timer.spl
 
-### 4. spl_progs/haltprog.spl
+### 6. spl_progs/interrupt_10.spl
 
-### 5. spl_progs/module_scheduler.spl
+### 7. spl_progs/interrupt_console_output.spl
 
-### 6. spl_progs/os_startup.spl
-
-### 7. spl_progs/sample_timer.spl
-
-### 8. spl_progs/interrupt_10.spl
-
-### 9. spl_progs/interrupt_console_output.spl
-
-### 10. spl_progs/module_resource_manager.spl
+### 8. spl_progs/module_resource_manager.spl
 
 ## Compiling SPL Programs
 
@@ -154,7 +148,7 @@ Then run the bash script:
 $ ./run.sh
 ```
 
-This will generate corresponding xsm files: `oddNum.xsm`(init program), `evenNum.xsm`, `idle.xsm` in the `expl_progs` directory and `module_boot.xsm`, `module_scheduler.xsm`, `module_device_manager.xsm`, `module_resource_manager.xsm`, `interrupt_10.xsm`, `haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm`, `interrupt_console_output.xsm`, `interrupt_console_input.xsm`, `console_interrupt_handler.xsm` in the `spl_progs` directory.
+This will generate corresponding xsm files: `gcd.xsm`(init program), `idle.xsm` in the `expl_progs` directory and `module_boot.xsm`, `module_scheduler.xsm`, `module_device_manager.xsm`, `module_resource_manager.xsm`, `interrupt_10.xsm`, `haltprog.xsm`, `os_startup.xsm`, `sample_timer.xsm`, `interrupt_console_output.xsm`, `interrupt_console_input.xsm`, `console_interrupt_handler.xsm` in the `spl_progs` directory.
 
 Then run:
 

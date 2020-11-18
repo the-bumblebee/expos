@@ -1,0 +1,25 @@
+// TIMER INTERRUPT HANDLER
+
+// Save SP and changing to kernel stack
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+// USE REGISTERS ONLY AFTER THIS
+//Saving the user context
+backup;
+
+// Setting state from RUNNING to READY
+[PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = READY;
+
+// Invoking scheduler
+call MOD_5;
+
+// DO NOT USE REGISTERS BEYOND THIS POINT
+//Restoring the user context
+restore;
+
+// SP-> UPTR, MODE-> 0
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 9] = 0;
+
+ireturn;

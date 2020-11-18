@@ -1,0 +1,31 @@
+decl
+    int gcd (int a, int b);
+enddecl
+
+int gcd (int a, int b) {
+    decl
+        int reminder;
+    enddecl
+    begin
+        while ((a % b) > 0) do
+            reminder = a % b;
+            a = b;
+            b = reminder;
+        endwhile;
+        return b;
+    end
+}
+
+int main()
+{
+	decl
+		int a, b, temp;
+	enddecl
+	begin
+        temp = exposcall ("Read", -1, a);
+        temp = exposcall ("Read", -1, b);
+		temp = gcd (a, b);
+        temp = exposcall ("Write", -2, temp);
+		return 0;
+	end
+}

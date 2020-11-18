@@ -1,0 +1,69 @@
+// MODULE 2 - MEMORY MANAGER
+
+alias funcNum R1;
+
+// Checking if function number is 1
+if (funcNum == GET_FREE_PAGE) then
+    call GetFreePage;
+    print "getfreepage";
+    breakpoint;
+    return;
+endif;
+
+// Checking if function number is 2
+if (funcNum == RELEASE_PAGE) then
+    call ReleasePage;
+    print "releasepage";
+    breakpoint;
+    return;
+endif;
+
+// Return if function number is incorrect
+return;
+
+GetFreePage:
+    // Increment WAIT_MEM_COUNT
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] + 1;
+    // Busy loop while memory full
+    while ([SYSTEM_STATUS_TABLE + 2] <= 0) do
+        // Setting STATE as WAIT_MEM
+        [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = WAIT_MEM;
+        // Invoke Scheduler
+        call SCHEDULER;
+    endwhile;
+    // Decrement WAIT_MEM_COUNT and MEM_FREE_COUNT
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] - 1;
+    [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
+    // Getting a free page from Memory Free List
+    alias freePage R2;
+    freePage = 76;
+    while ([MEMORY_FREE_LIST + freePage] != 0 && freePage < NUM_MEM_PAGES) do
+        freePage = freePage + 1;
+    endwhile;
+    // Doesn't need to check if the page obtained is > 127 as if it were the case, STATUS woud be WAIT_MEM
+    // Increment Mem Free Lst
+    [MEMORY_FREE_LIST + freePage] = [MEMORY_FREE_LIST + freePage] + 1;
+    alias returnVal R0;
+    // Return value is the free page obtained
+    returnVal = freePage;
+    return;
+
+ReleasePage:
+    // Decrementing corresponding Memory Free List entry
+    alias page R2;
+    [MEMORY_FREE_LIST + page] = [MEMORY_FREE_LIST + page] - 1;
+    // If entry = 0, update MEM_FREE_COUNT of System Status Table
+    if ([MEMORY_FREE_LIST + page] == 0) then
+        [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] + 1;
+    endif;
+    // Setting processes with STATUS as WAIT_MEM to READY
+    alias PID R3;
+    PID = 1;
+    while (PID < 16) do
+        if ([PROCESS_TABLE + (PID * 16) + 4] == WAIT_MEM) then
+            [PROCESS_TABLE + (PID * 16) + 4] = READY;
+        endif;
+        PID = PID + 1;
+    endwhile;
+    return;
+    

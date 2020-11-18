@@ -37,6 +37,8 @@ GetFreePage:
         freePage = freePage + 1;
     endwhile;
     // Doesn't need to check if the page obtained is > 127 as if it were the case, STATUS woud be WAIT_MEM
+    // Increment Mem Free Lst
+    [MEMORY_FREE_LIST + freePage] = [MEMORY_FREE_LIST + freePage] + 1;
     alias returnVal R0;
     // Return value is the free page obtained
     returnVal = freePage;

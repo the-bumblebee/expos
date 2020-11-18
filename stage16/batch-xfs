@@ -4,8 +4,7 @@ load --module 5 $HOME/expos-roadmap/stage16/spl_progs/module_scheduler.xsm
 load --module 4 $HOME/expos-roadmap/stage16/spl_progs/module_device_manager.xsm
 load --module 0 $HOME/expos-roadmap/stage16/spl_progs/module_resource_manager.xsm
 load --idle $HOME/expos-roadmap/stage16/expl_progs/idle.xsm
-load --init $HOME/expos-roadmap/stage16/expl_progs/oddNum.xsm
-load --exec $HOME/expos-roadmap/stage16/expl_progs/evenNum.xsm
+load --init $HOME/expos-roadmap/stage16/expl_progs/gcd.xsm
 load --int=10 $HOME/expos-roadmap/stage16/spl_progs/interrupt_10.xsm
 load --exhandler $HOME/expos-roadmap/stage16/spl_progs/haltprog.xsm
 load --os $HOME/expos-roadmap/stage16/spl_progs/os_startup.xsm

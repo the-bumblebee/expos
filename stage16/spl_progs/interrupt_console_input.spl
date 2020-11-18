@@ -17,6 +17,7 @@ SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16 + 11] * 512 - 1;
 alias physicalPageNum R1;
 alias offset R2;
 alias fileDescPhysicalAddr R3;
+alias fileDescriptor R4;
 
 // Computing the physical page no. of user stack, since in kernel mode
 physicalPageNum = [PTBR + 2 * ((userSP - 4)/ 512)];
@@ -24,8 +25,7 @@ physicalPageNum = [PTBR + 2 * ((userSP - 4)/ 512)];
 // That is, the file descriptor is at (userSP - 4)
 offset = (userSP - 4) % 512;
 fileDescPhysicalAddr = (physicalPageNum * 512) + offset;
-alias fileDescriptor R4;
-fileDescriptor=[fileDescPhysicalAddr];
+fileDescriptor = [fileDescPhysicalAddr];
 
 // Checking if file descriptor valid
 if (fileDescriptor != -1) then
