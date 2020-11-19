@@ -1,0 +1,12 @@
+int main()
+{
+decl
+    int temp, fi;
+enddecl
+begin
+    temp = exposcall ("Fork");
+    temp = exposcall ("Read", -1, fi);
+    temp = exposcall ("Exec", fi);
+    return 0;
+end
+}

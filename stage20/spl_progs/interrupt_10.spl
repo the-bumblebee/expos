@@ -1,0 +1,17 @@
+// INTERRUPT 10 - EXIT SYSTEM CALL
+alias currentPID R0;
+alias currentProcessTable R1;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+SP = [currentProcessTable + 11] * 512 - 1;
+
+[currentProcessTable + 9] = INT_EXIT;
+
+multipush (R0, R1);
+R1 = EXIT_PROCESS;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+call PROCESS_MANAGER;
+multipop (R0, R1);
+
+// Else call scheduler
+call MOD_5;
