@@ -21,7 +21,6 @@ if (EC != 0) then
     call SCHEDULER;
 endif;
 
-breakpoint;
 // Page fault due to code page
 if (EPN > 4 && EPN < 8) then
     multipush (EPN);
