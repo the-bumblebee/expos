@@ -18,4 +18,4 @@ load --int=6 $HOME/expos-roadmap/stage19/spl_progs/interrupt_console_input.xsm
 load --int=console $HOME/expos-roadmap/stage19/spl_progs/console_interrupt_handler.xsm
 load --int=disk $HOME/expos-roadmap/stage19/spl_progs/disk_interrupt_handler.xsm
 load --exec $HOME/expos-roadmap/stage19/expl_progs/numbers.xsm
-load --exec $HOME/expos-roadmap/stage19/expl_progs/hello.xsm
+load --exec $HOME/expos-roadmap/stage19/expl_progs/list.xsm

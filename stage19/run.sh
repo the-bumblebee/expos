@@ -20,6 +20,6 @@ cd ../expl/
 ./expl ~/expos-roadmap/stage19/expl_progs/exec.expl
 ./expl ~/expos-roadmap/stage19/expl_progs/numbers.expl
 ./expl ~/expos-roadmap/stage19/expl_progs/idle.expl
-./expl ~/expos-roadmap/stage19/expl_progs/hello.expl
+./expl ~/expos-roadmap/stage19/expl_progs/list.expl
 cd ../xfs-interface/
 ./xfs-interface run ~/expos-roadmap/stage19/batch-xfs

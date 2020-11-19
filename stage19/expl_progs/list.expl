@@ -1,0 +1,42 @@
+type
+    linkedlist {
+        int data;
+        linkedlist next;
+    }
+endtype
+
+decl
+    linkedlist root, tlist;
+enddecl
+
+int main()
+{
+decl
+    int i, n, temp;
+enddecl
+begin
+    temp = initialize();
+    temp = exposcall ( "Read" , -1, n );
+    root = alloc();
+    tlist = root;
+    i = 0;
+    while (i < n) do
+        temp = exposcall ( "Read" , -1, tlist.data );
+        tlist.next = alloc();
+        tlist = tlist.next;
+        i = i + 1;
+    endwhile;
+
+    temp = exposcall ( "Write" , -2, " " );
+    temp = exposcall ( "Write" , -2, "list" );
+
+    tlist = root;
+    i = 0;
+    while (i < n) do
+        temp = exposcall ( "Write" , -2, tlist.data );
+        tlist = tlist.next;
+        i = i + 1;
+    endwhile;
+    return 0;
+end
+}
