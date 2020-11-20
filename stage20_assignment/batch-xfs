@@ -1,0 +1,20 @@
+fdisk
+load --module 7 $HOME/expos-roadmap/stage20_assignment/spl_progs/module_boot.xsm
+load --module 5 $HOME/expos-roadmap/stage20_assignment/spl_progs/module_scheduler.xsm
+load --module 4 $HOME/expos-roadmap/stage20_assignment/spl_progs/module_device_manager.xsm
+load --module 0 $HOME/expos-roadmap/stage20_assignment/spl_progs/module_resource_manager.xsm
+load --module 1 $HOME/expos-roadmap/stage20_assignment/spl_progs/module_process_manager.xsm
+load --module 2 $HOME/expos-roadmap/stage20_assignment/spl_progs/module_memory_manager.xsm
+load --idle $HOME/expos-roadmap/stage20_assignment/expl_progs/idle.xsm
+load --init $HOME/expos-roadmap/stage20_assignment/expl_progs/init.xsm
+load --int=10 $HOME/expos-roadmap/stage20_assignment/spl_progs/interrupt_10.xsm
+load --int=9 $HOME/expos-roadmap/stage20_assignment/spl_progs/interrupt_9.xsm
+load --int=8 $HOME/expos-roadmap/stage20_assignment/spl_progs/interrupt_8.xsm
+load --exhandler $HOME/expos-roadmap/stage20_assignment/spl_progs/exception_handler.xsm
+load --os $HOME/expos-roadmap/stage20_assignment/spl_progs/os_startup.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=timer $HOME/expos-roadmap/stage20_assignment/spl_progs/sample_timer.xsm
+load --int=7 $HOME/expos-roadmap/stage20_assignment/spl_progs/interrupt_console_output.xsm
+load --int=6 $HOME/expos-roadmap/stage20_assignment/spl_progs/interrupt_console_input.xsm
+load --int=console $HOME/expos-roadmap/stage20_assignment/spl_progs/console_interrupt_handler.xsm
+load --int=disk $HOME/expos-roadmap/stage20_assignment/spl_progs/disk_interrupt_handler.xsm

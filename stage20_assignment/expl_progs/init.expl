@@ -1,0 +1,50 @@
+type
+    linkedlist {
+        int data;
+        linkedlist next;
+    }
+endtype
+
+decl
+    linkedlist root, tlist;
+enddecl
+
+int main()
+{
+decl
+    int i, n, temp;
+enddecl
+begin
+    temp = initialize();
+    root = alloc();
+    tlist = root;
+    i = 0;
+    while (i < 100) do
+        tlist.data = i + 1;
+        tlist.next = alloc();
+        tlist = tlist.next;
+        i = i + 1;
+    endwhile;
+
+    temp = exposcall ( "Fork" );
+
+    if (temp == 0) then
+        tlist = root;
+        i = 0;
+        while (i < 50) do
+            temp = exposcall ( "Write" , -2, tlist.data );
+            tlist = tlist.next.next;
+            i = i + 1;
+        endwhile;
+    else
+        tlist = root.next;
+        i = 0;
+        while (i < 50) do
+            temp = exposcall ( "Write" , -2, tlist.data );
+            tlist = tlist.next.next;
+            i = i + 1;
+        endwhile;
+    endif;
+    return 0;
+end
+}
