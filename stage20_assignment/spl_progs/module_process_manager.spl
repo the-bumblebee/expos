@@ -72,16 +72,18 @@ FreePageTable:
     diskMapEntry = DISK_MAP_TABLE + (currentPID * 10);
     index = 2;
     while (index < 10) do
-        if (index < 8 && index > 3) then
-            [diskMapEntry + index] = -1;
-        else
-            if ([diskMapEntry + index] != -1) then
-                R1 = RELEASE_BLOCK;
-                // R2 has current PID
-                call MEMORY_MANAGER;
-                [diskMapEntry + index] = -1;
-            endif;
+
+        if ([diskMapEntry + index] != -1 && (index < 4 || index > 7)) then
+            multipush (R1, R2, R3);
+            R2 = [diskMapEntry + index];
+            R3 = [SYSTEM_STATUS_TABLE + 1];
+            R1 = RELEASE_BLOCK;
+            call MEMORY_MANAGER;
+            multipop (R1, R2, R3);
         endif;
+
+        [diskMapEntry + index] = -1;
+
         index = index + 1;
     endwhile;
 

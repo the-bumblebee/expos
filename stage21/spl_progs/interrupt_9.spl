@@ -163,7 +163,7 @@ multipop (R0, R1, R2, R3, R4, R5, R6);
 alias diskMapIndex R6;
 diskMapIndex = 0;
 while (diskMapIndex < 10) do
-    [DISK_MAP_TABLE + (currentPID * 16) + diskMapIndex] = -1;
+    [DISK_MAP_TABLE + (currentPID * 10) + diskMapIndex] = -1;
     diskMapIndex = diskMapIndex + 1;
 endwhile;
 

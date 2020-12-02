@@ -76,7 +76,7 @@ endwhile;
 
 // Disk map table, rest have to be made invalid
 index = 2;
-while (index < 8) do
+while (index < 10) do
     [DISK_MAP_TABLE + (newPID * 10) + index] = [DISK_MAP_TABLE + (currentPID * 10) + index];
     index = index + 1;
 endwhile;

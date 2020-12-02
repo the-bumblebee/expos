@@ -18,9 +18,7 @@ cd ~/myexpos/spl/
 ./spl ~/expos-roadmap/stage20_assignment/spl_progs/os_startup.spl
 ./spl ~/expos-roadmap/stage20_assignment/spl_progs/sample_timer.spl
 cd ../expl/
-./expl ~/expos-roadmap/stage20_assignment/expl_progs/exec.expl
 ./expl ~/expos-roadmap/stage20_assignment/expl_progs/idle.expl
-./expl ~/expos-roadmap/stage20_assignment/expl_progs/odd.expl
 ./expl ~/expos-roadmap/stage20_assignment/expl_progs/init.expl
 cd ../xfs-interface/
 ./xfs-interface run ~/expos-roadmap/stage20_assignment/batch-xfs

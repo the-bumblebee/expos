@@ -90,7 +90,7 @@ newPageTable = PAGE_TABLE_BASE + (newPID * 20);
 [newPageTable + 3] = "0100";
 
 index = 2;
-while (index < 8) do
+while (index < 10) do
     [newPageTable + (2 *index)] = [PTBR + (2 * index)];
     [MEMORY_FREE_LIST + [PTBR + (2 * index)]] = [MEMORY_FREE_LIST + [PTBR + (2 * index)]] + 1;
     [newPageTable + (2 *index) + 1] = [PTBR + (2 * index) + 1];

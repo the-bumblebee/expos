@@ -132,6 +132,16 @@ PTBR = PAGE_TABLE_BASE + 20;
 //Setting entry point for init
 [76*512] = [65*512 + 1];
 
+// Initialize Disk Map Table of init
+alias diskMapEntry R0;
+diskMapEntry = DISK_MAP_TABLE + (1 * 10);
+alias i R1;
+i = 0;
+while (i < 10) do
+    [diskMapEntry + i] = -1;
+    i = i + 1;
+endwhile;
+
 
 // Initilizing the Pre-Process Table for init, UAPage: 80
 alias preProcessEntry R0;
