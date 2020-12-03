@@ -1,0 +1,77 @@
+// INTERRUPT 11 - WAIT, SIGNAL, GETPID, GETPPID
+
+alias currentPID R0;
+alias currentProcessTable R1;
+alias sysCallNumber R2;
+alias userSP R4;
+
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+
+[currentProcessTable + 13] = SP;
+userSP = SP;
+SP = [currentProcessTable + 11] * 512 - 1;
+
+sysCallNumber = [[PTBR + 2 * ((userSP - 5)/512)] * 512 + ((userSP - 5)%512)];
+
+if (sysCallNumber == INT_WAIT) then
+    call Wait;
+endif;
+
+if (sysCallNumber == INT_SIGNAL) then
+    call Signal;
+endif;
+
+if (sysCallNumber == INT_GETPID) then
+    call Getpid;
+endif;
+
+if (sysCallNumber == INT_GETPPID) then
+    call Getppid;
+endif;
+
+[currentProcessTable + 9] = 0;
+SP = [currentProcessTable + 13];
+ireturn;
+
+Wait:
+    alias waitPID R5;
+    [currentProcessTable + 9] = sysCallNumber;
+    waitPID = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
+    if (waitPID == currentPID || waitPID < 0 || waitPID > 15 || [PROCESS_TABLE + (waitPID * 16) + 4] == TERMINATED) then
+        print "No can do";
+        [[PTBR + ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
+        [currentProcessTable + 9] = 0;
+        SP = [currentProcessTable + 13];
+        ireturn;
+    endif;
+    [currentProcessTable + 4] = WAIT_PROCESS;
+    [currentProcessTable + 5] = waitPID;
+    multipush (R0, R1, R2, R3, R4, R5);
+    call SCHEDULER;
+    multipop (R0, R1, R2, R3, R4, R5);
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = 0;
+    return;
+
+Signal:
+    alias PID R5;
+    [currentProcessTable + 9] = sysCallNumber;
+    PID = 1;
+    while (PID < 16) do
+        if ([PROCESS_TABLE + (PID * 16) + 4] == WAIT_PROCESS && [PROCESS_TABLE + (PID * 16) + 5] == currentPID) then
+            [PROCESS_TABLE + (PID * 16) + 4] = READY;
+        endif;
+        PID = PID + 1;
+    endwhile;
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = 0;
+    return;
+
+Getpid:
+    [currentProcessTable + 9] = sysCallNumber;
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = currentPID;
+    return;
+
+Getppid:
+    [currentProcessTable + 9] = sysCallNumber;
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = [currentProcessTable + 2];
+    return;
