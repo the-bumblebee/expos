@@ -1,0 +1,135 @@
+// MODULE 4 - DEVICE MANAGER
+// Function number in R1 and PID in R2
+alias funcNum R1;
+alias currentPID R2;
+
+// Check if function number is 3
+if (funcNum == TERMINAL_WRITE) then
+    call TerminalWrite;
+    return;
+endif;
+
+// Checks if function number is 4
+if (funcNum == TERMINAL_READ) then
+    call TerminalRead;
+    return;
+endif;
+
+// Checks if function number is 2
+if (funcNum == DISK_LOAD) then
+    call DiskLoad;
+    return;
+endif;
+
+if (funcNum == DISK_STORE) then
+    call DiskStore;
+    return;
+endif;
+
+// Return if function number is incorrect
+return;
+
+
+// Arguments: R2->PID, R3->Word
+TerminalWrite:
+    // Saving the registers in use
+    multipush(R0, R1, R2, R3);
+    // Setting function number in R1 as 8 for Acquire Terminal. R2 already has the PID
+    R1 = ACQUIRE_TERMINAL;
+    // Call the Resource Manager Module (Module 0)
+    call RESOURCE_MANAGER;
+    // Restore registers
+    multipop(R0, R1, R2, R3);
+    // Print the word stored in R3
+    print R3;
+    // Store the registers in use
+    multipush(R0, R1, R2, R3);
+    // Setting function number in R1 as 9 for Release Terminal. R2 already has the PID
+    R1 = RELEASE_TERMINAL;
+    // Call the Resource Manager Module (Module 0)
+    call RESOURCE_MANAGER;
+    // Store the return value in R0 in R4 and restore registers
+    alias returnValue R4;
+    returnValue = R0;
+    multipop(R0, R1, R2, R3);
+    return;
+
+// Arguments: R2->PID, R3-Logical address of the word
+TerminalRead:
+    multipush(R0, R1, R2, R3);
+    // Setting function number in R1 as 8 for Acquire Terminal. R2 already has the PID
+    R1 = ACQUIRE_TERMINAL;
+    // Call the Resource Manager Module (Module 0)
+    call RESOURCE_MANAGER;
+    // Restore registers
+    multipop(R0, R1, R2, R3);
+
+    // IN statemment
+    read;
+    // Change STATE of the process to WAIT_TERMINAL
+    [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_TERMINAL;
+
+    multipush(R0, R1, R2, R3);
+    // Invoke Scheduler
+    call SCHEDULER;
+
+    // Following steps are executed after return from Scheduler
+    // Restore register
+    multipop(R0, R1, R2, R3);
+    // Logical address of word is in R3. Convert this to physical address.
+    alias physicalWordAddress R4;
+    // physicalPage*512 + offset
+    physicalWordAddress = [PTBR + 2 * (R3 / 512)] * 512 + (R3 % 512);
+    // Store value stored in INPUT BUFFER of process to this location
+    [physicalWordAddress] = [PROCESS_TABLE + (currentPID * 16) + 8];
+    return;
+
+// Arguments: R2->PID, R3->Page Number, R4->Block NUmber
+DiskLoad:
+    multipush (R1, R2, R3, R4);
+    // R1-> Function number for Acquire Disk. R2-> PID
+    R1 = ACQUIRE_DISK;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R1, R2, R3, R4);
+    // No return value
+    // Setting fields of Disk Status Table
+    // Specifying LOAD operation
+    [DISK_STATUS_TABLE] = 1;	
+    [DISK_STATUS_TABLE + 1] = 0;
+    // Setting PAGE NUMBER
+    [DISK_STATUS_TABLE + 2] = R3;
+    // Setting BLOCK NUMBER
+    [DISK_STATUS_TABLE + 3] = R4;
+    // Note: PID and STATUS fields of Disk Status Table are set in Resource Manager
+    // Initiating disk block to memory page transfer
+    load(R3, R4);
+    // Set STATE of process as WAIT_DISK
+    [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_DISK;
+    // Invoke the Scheduler
+    call SCHEDULER;
+    return;
+
+// Args: PID, Page Number, Block Number
+DiskStore:
+    multipush (R1, R2, R3, R4);
+    // R1-> Function number for Acquire Disk. R2-> PID
+    R1 = ACQUIRE_DISK;
+    R2 = currentPID;
+    call RESOURCE_MANAGER;
+    multipop (R1, R2, R3, R4);
+    // Setting fields of Disk Status Table
+    // Specifying STORE operation
+    [DISK_STATUS_TABLE] = 1;	
+    [DISK_STATUS_TABLE + 1] = 1;
+    // Setting PAGE NUMBER
+    [DISK_STATUS_TABLE + 2] = R3;
+    // Setting BLOCK NUMBER
+    [DISK_STATUS_TABLE + 3] = R4;
+    // Storing memory page to disk block
+    store(R3, R4);
+    // Set STATE of process as WAIT_DISK
+    [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_DISK;
+    // Invoke the Scheduler
+    call SCHEDULER;
+    return;

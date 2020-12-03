@@ -1,0 +1,100 @@
+// INTERRUPT 13 - SEMGET, SEMRELEASE
+
+alias currentPID R0;
+alias currentProcessTable R1;
+alias sysCallNumber R2;
+alias userSP R4;
+alias resourceTable R5;
+
+// PID, Process Table stored in registers
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+
+// Saving and changing SP
+[currentProcessTable + 13] = SP;
+userSP = SP;
+SP = [currentProcessTable + 11] * 512 - 1;
+
+// Extracting System Call Number
+sysCallNumber = [[PTBR + 2 * ((userSP - 5)/512)] * 512 + ((userSP - 5)%512)];
+
+if (sysCallNumber == INT_SEMGET) then
+	call SemGet;
+endif;
+
+if (sysCallNumber == INT_SEMRELEASE) then
+    call SemRelease;
+endif;
+
+// Resetting MODE and changing to user stack
+[currentProcessTable + 9] = 0;
+SP = [currentProcessTable + 13];
+ireturn;
+
+SemGet:
+    alias index R6;
+
+    // Setting MODE
+    [currentProcessTable + 9] = sysCallNumber;
+    resourceTable = [currentProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+
+    // Finding free entry in Per Process Table (SEMID or Semaphore Descriptor)
+    index = 0;
+    while ([resourceTable + 2 * index] != -1 && index < 8) do
+        index = index + 1;
+    endwhile;
+
+    // Return -1 if no free entry
+    if (index == 8) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
+        return;
+    endif;
+
+    // Resource Identifier -> 1 for Semaphore
+    [resourceTable + 2 * index] = 1;
+
+    // Acquiring Semaphore in Semaphore Table
+    multipush (R0, R1, R2, R3, R4, R5, R6);
+    R1 = ACQUIRE_SEMAPHORE;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+	// If no free Semaphores(-1), return -2
+    if (R0 == -1) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -2;
+        multipop (R0, R1, R2, R3, R4, R5, R6);
+        return;
+	endif;
+    // Else store the index of Semaphore Table entry
+    [resourceTable + 2 * index + 1] = R0;
+    multipop (R0, R1, R2, R3, R4, R5, R6);
+
+    // Return value -> index
+	[[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = index;
+	return;
+
+SemRelease:
+    alias SEMID R6;
+    // Setting MODE
+    [currentProcessTable + 9] = sysCallNumber;
+    resourceTable = [currentProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+    // Extracting SEMID from user stack
+    SEMID = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
+    // Check if invalid SEMID or SEMID is free, then return -1
+    if (SEMID < 0 || SEMID > 7 || [resourceTable + 2 * SEMID] == -1) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
+        return;
+    endif;
+
+    // Release Semaphore
+    multipush (R0, R1, R2, R3, R4, R5, R6);
+    R1 = RELEASE_SEMAPHORE;
+    R2 = [resourceTable + 2 * SEMID + 1]; // R5, R6
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R0, R1, R3, R4, R5, R6);
+
+    // Invalidate Per Process Table entry
+    [resourceTable + 2 * SEMID] = -1;
+    // Return value -> 0
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = 0;
+    return;

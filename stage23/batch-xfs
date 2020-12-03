@@ -1,0 +1,27 @@
+fdisk
+load --module 7 $HOME/expos-roadmap/stage23/spl_progs/module_boot.xsm
+load --module 5 $HOME/expos-roadmap/stage23/spl_progs/module_scheduler.xsm
+load --module 4 $HOME/expos-roadmap/stage23/spl_progs/module_device_manager.xsm
+load --module 0 $HOME/expos-roadmap/stage23/spl_progs/module_resource_manager.xsm
+load --module 1 $HOME/expos-roadmap/stage23/spl_progs/module_process_manager.xsm
+load --module 2 $HOME/expos-roadmap/stage23/spl_progs/module_memory_manager.xsm
+load --idle $HOME/expos-roadmap/stage23/expl_progs/idle.xsm
+load --init $HOME/expos-roadmap/stage23/expl_progs/shell.xsm
+load --int=15 $HOME/expos-roadmap/stage23/spl_progs/interrupt_15.xsm
+load --int=14 $HOME/expos-roadmap/stage23/spl_progs/interrupt_14.xsm
+load --int=13 $HOME/expos-roadmap/stage23/spl_progs/interrupt_13.xsm
+load --int=11 $HOME/expos-roadmap/stage23/spl_progs/interrupt_11.xsm
+load --int=10 $HOME/expos-roadmap/stage23/spl_progs/interrupt_10.xsm
+load --int=9 $HOME/expos-roadmap/stage23/spl_progs/interrupt_9.xsm
+load --int=8 $HOME/expos-roadmap/stage23/spl_progs/interrupt_8.xsm
+load --int=4 $HOME/expos-roadmap/stage23/spl_progs/interrupt_4.xsm
+load --exhandler $HOME/expos-roadmap/stage23/spl_progs/exception_handler.xsm
+load --os $HOME/expos-roadmap/stage23/spl_progs/os_startup.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=timer $HOME/expos-roadmap/stage23/spl_progs/sample_timer.xsm
+load --int=7 $HOME/expos-roadmap/stage23/spl_progs/interrupt_console_output.xsm
+load --int=6 $HOME/expos-roadmap/stage23/spl_progs/interrupt_console_input.xsm
+load --int=console $HOME/expos-roadmap/stage23/spl_progs/console_interrupt_handler.xsm
+load --int=disk $HOME/expos-roadmap/stage23/spl_progs/disk_interrupt_handler.xsm
+load --exec $HOME/expos-roadmap/stage23/expl_progs/create.xsm
+load --exec $HOME/expos-roadmap/stage23/expl_progs/delete.xsm
