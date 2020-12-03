@@ -90,7 +90,7 @@ DiskLoad:
     // No return value
     // Setting fields of Disk Status Table
     // Specifying LOAD operation
-    [DISK_STATUS_TABLE + 1] = 1;
+    [DISK_STATUS_TABLE + 1] = 0;
     // Setting PAGE NUMBER
     [DISK_STATUS_TABLE + 2] = R3;
     // Setting BLOCK NUMBER
