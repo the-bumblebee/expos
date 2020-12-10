@@ -38,7 +38,7 @@ SemLock:
         return;
     endif;
     semTableEntry = SEMAPHORE_TABLE + 4 * [resourceTable + 1];
-    while([semTableEntry] != -1) do
+    while([semTableEntry] != -1 && [semTableEntry] != currentPID) do
         [currentProcessTable + 4] = WAIT_SEMAPHORE;
         [currentProcessTable + 5] = [resourceTable + 1];
         multipush(R0, R1, R2, R3, R4, R5, R6, R7);

@@ -43,10 +43,11 @@ loadi(9, 22);
 loadi(14, 27);
 loadi(15, 28);
 
-// Loading inode table
-loadi(59, 3);
-loadi(60, 4);
+// Initializing STATUS field in Terminal Status Table as 0
+[TERMINAL_STATUS_TABLE] = 0;
 
+
+// -----------------Stage 17-------------------
 // Loads the Exec System Call (Interrupt 9) from blocks 33, 34 to pages 20, 21
 loadi(20, 33);
 loadi(21, 34);
@@ -59,43 +60,81 @@ loadi(43, 56);
 loadi(44, 57);
 loadi(45, 58);
 
+// Loading inode table
+loadi(59, 3);
+loadi(60, 4);
+
+// Initializing the Memory Free List
+alias page R0;
+page = 0;
+while (page <= 82) do
+    [MEMORY_FREE_LIST + page] = 1;
+    page = page + 1;
+endwhile;
+while (page < MAX_MEM_PAGE) do
+    [MEMORY_FREE_LIST + page] = 0;
+    page = page + 1;
+endwhile;
+
+// Setting WAIT_MEM_COUNT and MEM_FREE_COUNT field in the System Status Table
+[SYSTEM_STATUS_TABLE + 3] = 0;
+[SYSTEM_STATUS_TABLE + 2] = NUM_MEM_PAGES - 83;
+// --------------------------------------------
+
+
+// -----------------Stage 18-------------------
 // Loads Disk Interrupt Handler from blocks 19, 20 to pages 6, 7
 loadi(6, 19);
 loadi(7, 20);
 
+// Initializing STATUS field in Disk Status Table as 0
+[DISK_STATUS_TABLE] = 0;
+
+// Initializing the Pre-Process Table for init, UAPage: 80
+alias perProcessEntry R0;
+perProcessEntry = 0;
+while (perProcessEntry < 8) do
+    [80 * 512 + RESOURCE_TABLE_OFFSET + (2 * perProcessEntry)] = -1;
+    perProcessEntry = perProcessEntry + 1;
+endwhile;
+// --------------------------------------------
+
+
+// -----------------Stage 19-------------------
+// Initialize Disk Map Table of init
+alias diskMapEntry R0;
+diskMapEntry = DISK_MAP_TABLE + (1 * 10);
+alias i R1;
+i = 0;
+while (i < 10) do
+    [diskMapEntry + i] = -1;
+    i = i + 1;
+endwhile;
+
 // Load Disk Free List from block 2 to page 61
 loadi(61, 2);
+// --------------------------------------------
 
+
+// -----------------Stage 20-------------------
 // Fork- 31,32 to 18, 19
 loadi(18, 31);
 loadi(19, 32);
+// --------------------------------------------
 
+
+// -----------------Stage 21-------------------
 // Int 11 - 37, 38 to 24, 25
 loadi(24, 37);
 loadi(25, 38);
 
-// SHutdown - 45, 46 to 32, 33
+// Int 15 (Shutdown) - 45, 46 to 32, 33
 loadi(32, 45);
 loadi(33, 46);
+// --------------------------------------------
 
-// Interrupt 13 - 41, 42 to 28, 29
-loadi(28, 41);
-loadi(29, 42);
 
-// Interrupt 14 - 43, 44 to 30, 31
-loadi(30, 43);
-loadi(31, 44);
-
-// Interrupt 4 - 23, 24 to 10, 11
-loadi(10, 23);
-loadi(11, 24);
-
-// Initializing STATUS field in Disk Status Table as 0
-[DISK_STATUS_TABLE] = 0;
-
-// Initializing STATUS field in Terminal Status Table as 0
-[TERMINAL_STATUS_TABLE] = 0;
-
+// -----------------Stage 22-------------------
 // Initializing Semaphore Table
 alias semTableIndex R0;
 semTableIndex = 0;
@@ -105,16 +144,23 @@ while(semTableIndex < 32) do
     semTableIndex = semTableIndex + 1;
 endwhile;
 
-// Initializing the Memory Free List
-alias page R0;
-page = 0;
-while (page <= 82) do
-    [MEMORY_FREE_LIST + page] = 1;
-    page = page + 1;
-endwhile;
+// Interrupt 13 - 41, 42 to 28, 29
+loadi(28, 41);
+loadi(29, 42);
 
-// Setting the MEM_FREE_COUNT field in the System Status Table
-[SYSTEM_STATUS_TABLE + 2] = NUM_MEM_PAGES - 83;
+// Interrupt 14 - 43, 44 to 30, 31
+loadi(30, 43);
+loadi(31, 44);
+// --------------------------------------------
+
+
+// -----------------Stage 23-------------------
+// Interrupt 4 - 23, 24 to 10, 11
+loadi(10, 23);
+loadi(11, 24);
+
+// Root file - 5 to 62
+loadi(62, 5);
 
 // Initialize File Status Table
 alias fileStatusTableIndex R0;
@@ -134,6 +180,8 @@ while (bufferIndex < MAX_BUFFER) do
     [BUFFER_TABLE + (bufferIndex * 4) + 2] = -1;
     bufferIndex = bufferIndex + 1;
 endwhile;
+// --------------------------------------------
+
 
 // Setting Page Table entry for init program
 // Memory pages:
@@ -184,26 +232,6 @@ PTBR = PAGE_TABLE_BASE + 20;
 
 //Setting entry point for init
 [76*512] = [65*512 + 1];
-
-// Initialize Disk Map Table of init
-alias diskMapEntry R0;
-diskMapEntry = DISK_MAP_TABLE + (1 * 10);
-alias i R1;
-i = 0;
-while (i < 10) do
-    [diskMapEntry + i] = -1;
-    i = i + 1;
-endwhile;
-
-
-// Initializing the Pre-Process Table for init, UAPage: 80
-alias preProcessEntry R0;
-preProcessEntry = 0;
-while (preProcessEntry < 8) do
-    [80 * 512 + (512 - 16) + (2 * preProcessEntry)] = -1;
-    preProcessEntry = preProcessEntry + 1;
-endwhile;
-
 
 // Setting the STATE field of the rest of
 // Process Table entries to TERMINATED
