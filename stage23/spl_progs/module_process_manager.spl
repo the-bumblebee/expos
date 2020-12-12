@@ -37,7 +37,7 @@ FreeUserAreaPage:
     resourceTable = [PROCESS_TABLE + (currentPID * 16) + 11] * 512 + RESOURCE_TABLE_OFFSET;
     resourceIndex = 0;
     while (resourceIndex < 8) do
-        if ([RESOURCE_TABLE_OFFSET + 2 * resourceIndex] == 1) then
+        if ([resourceTable + 2 * resourceIndex] == 1) then
             multipush(R1, R2, R3, R4);
             R1 = RELEASE_SEMAPHORE;
             R2 = resourceIndex;
