@@ -120,13 +120,12 @@ AcquireSemaphore:
     return;
 
 alias PID R3; // Alias used by ReleaseSemaphore, AcquireInode, ReleaseInode
+// Args: Index of Semaphore Table, PID
 ReleaseSemaphore:
-    alias SEMID R2;
-    alias semTableIndex R4;
-    semTableIndex = [[PROCESS_TABLE + (PID * 16) + 11] * 512 + RESOURCE_TABLE_OFFSET + 2 *SEMID];
+    alias semTableIndex R2;
     if ([SEMAPHORE_TABLE + 4 * semTableIndex] == PID) then
         [SEMAPHORE_TABLE + 4 * semTableIndex] = -1;
-        R4 = 1;
+        R4 = 0;
         while (R4 < 16) do
             if ([PROCESS_TABLE + (16 * R4) + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + (2 * R4) + 5] == semTableIndex) then
                 [PROCESS_TABLE + (16 * R4) + 4] = READY;
@@ -143,7 +142,7 @@ AcquireInode:
     // PID -> R3
 
     // While inode locked
-    while ([FILE_STATUS_TABLE + (inodeIndex * 4)] != -1) do
+    while ([FILE_STATUS_TABLE + (inodeIndex * 4)] != -1  && [FILE_STATUS_TABLE + (inodeIndex * 4)] != PID) do
         // Set STATE as (WAIT_FILE, Inode Index)
         [PROCESS_TABLE + (PID * 16) + 4] = WAIT_FILE;
         [PROCESS_TABLE + (PID * 16) + 5] = inodeIndex;

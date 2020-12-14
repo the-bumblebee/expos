@@ -19,6 +19,11 @@ Make sure you end up with folders `expos-roadmap` and `myexpos` at your home dir
 
 Each stage in this repo has a `README.md` that explains the required background in a minimal way (I hope so) and also has steps you need to follow to complete the stage. Do note that it is assumed that you have `myexpos` package and this repo set up at your home directory as mentioned above. If not, follow the above steps or change the commands of each stage accordingly. Please make sure to go through the source files and the `README.md` file of each stage for a thorough understanding, instead of just copy pasting the commands to your terminal.
 
+## Known Bugs
+
+#### Stage 22
+* Running the process "parent.xsm" a couple of times, raises an exception in one its processes. After this, running the process again for a couple more times leads to another exception that exits the processes, before the desired output is displayed. **Note:** This bug could affect the stages following this, but the test programs used didn't show any signs. It was just this process.
+
 ## Helpful Links
 1. [eXpOS Design](https://exposnitc.github.io/os_design.html)
 2. [Experimental Filesystem (eXpFS)](https://exposnitc.github.io/os_spec-files/eXpFS.html)

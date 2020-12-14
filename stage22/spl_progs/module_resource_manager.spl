@@ -109,11 +109,10 @@ AcquireSemaphore:
     returnValue = index;
     return;
 
+// Args: Index of Semaphore Table, PID
 ReleaseSemaphore:
-    alias SEMID R2;
+    alias semTableIndex R2;
     alias PID R3;
-    alias semTableIndex R4;
-    semTableIndex = [[PROCESS_TABLE + (PID * 16) + 11] * 512 + RESOURCE_TABLE_OFFSET + 2 *SEMID];
     if ([SEMAPHORE_TABLE + 4 * semTableIndex] == PID) then
         [SEMAPHORE_TABLE + 4 * semTableIndex] = -1;
         R4 = 1;
