@@ -1,0 +1,106 @@
+// INTERRUPT 5 - OPEN, CLOSE
+
+alias currentPID R0;
+alias currentProcessTable R1;
+alias sysCallNumber R2;
+alias userSP R4;
+alias resourceTable R5;
+
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+
+[currentProcessTable + 13] = SP;
+userSP = SP;
+SP = [currentProcessTable + 11] * 512 - 1;
+
+sysCallNumber = [[PTBR + 2 * ((userSP - 5)/512)] * 512 + ((userSP - 5)%512)];
+
+if (sysCallNumber == INT_OPEN) then
+    call OpenSysCall;
+endif;
+
+if (sysCallNumber == INT_CLOSE) then
+    call CloseSysCall;
+endif;
+
+[currentProcessTable + 9] = 0;
+SP = [currentProcessTable + 13];
+ireturn;
+
+// Args: filename
+OpenSysCall:
+    alias fileName R6;
+    fileName = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
+    [currentProcessTable + 9] = sysCallNumber;
+
+    // Find a free resource table entry.
+    // If none available, return -3
+    alias freeEntry R7;
+    resourceTable = [currentProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+    freeEntry = 0;
+    while ([resourceTable + (freeEntry * 2)] != -1 && freeEntry < 8) do
+        freeEntry = freeEntry + 1;
+    endwhile;
+    if (freeEntry == 8) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -3;
+        return;
+    endif;
+
+    // Call Open function from File Manager Module to get Open File entry
+    // If open fails, return error code
+    multipush (R0, R1, R2, R3, R4, R5, R6, R7);
+    R1 = OPEN;
+    R2 = fileName; // R5
+    call FILE_MANAGER;
+    if (R0 < 0) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = R0;
+        multipop (R0, R1, R2, R3, R4, R5, R6, R7);
+        return;
+    endif;
+
+    alias fileTableIndex R8;
+    fileTableIndex = R0;
+    multipop (R0, R1, R2, R3, R4, R5, R6, R7);
+
+    // Set Per-Process Table entry
+    // Set Resource Identifier to FILE and Open File Table index to the free Open File Table entry found
+    [resourceTable + (freeEntry * 2)] = FILE;
+    [resourceTable + (freeEntry * 2) + 1] = fileTableIndex;
+
+    // Return index of Per-Process Resource Table entry
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = freeEntry;
+    return;
+
+// Args: Index of Per-Process Table entry
+CloseSysCall:
+    alias fileDescriptor R6;
+    fileDescriptor = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
+    [currentProcessTable + 9] = sysCallNumber;
+
+    // If file descriptor invalid, return -1
+    if (fileDescriptor < 0 || fileDescriptor > 0) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
+        return;
+    endif;
+
+    resourceTable = [currentProcessTable + 11] + RESOURCE_TABLE_OFFSET;
+
+    // If Resource Identifier field of Resource Table entry invalid or not file, return -1
+    if ([resourceTable + (fileDescriptor * 2)] != FILE) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
+        return;
+    endif;
+
+    // Call Close function in File Manager module with Open File Table index as argument
+    multipush (R0, R1, R2, R3, R4, R5, R6);
+    R1 = CLOSE;
+    R2 = [resourceTable + (fileDescriptor * 2) + 1];
+    call FILE_MANAGER;
+    multipop (R0, R1, R2, R3, R4, R5, R6);
+
+    // Invalidate Per-Process Resource Table entry
+    [resourceTable + (fileDescriptor * 2)] = -1;
+
+    // Return with 0 to indicate success
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = 0;
+    return;

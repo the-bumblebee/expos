@@ -73,24 +73,10 @@ SP = [currentProcessTable + 11] * 512 - 1;
 [PTBR + 2] = 64;
 [PTBR + 3] = "0100";
 
-// Allocating heap and stack pages
-//Heap
+// Invalidating heap and stack
 multipush (R0, R1, R2, R3, R4);
 
 // Heap
-// Allocating pages for heap
-// R1 = GET_FREE_PAGE;
-// call MEMORY_MANAGER;
-// [PTBR + 4] = R0;
-// [PTBR + 5] = "0110";
-
-// R1 = GET_FREE_PAGE;
-// call MEMORY_MANAGER;
-// [PTBR + 6] = R0;
-// [PTBR + 7] = "0110";
-
-// Invalidating heap pages
-
 [PTBR + 4] = -1;
 [PTBR + 5] = "0000";
 
@@ -109,30 +95,6 @@ call MEMORY_MANAGER;
 [PTBR + 19] = "0110";
 
 multipop (R0, R1, R2, R3, R4);
-
-// Code pages
-// alias codePageIndex R6;
-// codePageIndex = 0;
-// multipush (R0, R1, R2, R3);
-// while ([INODE_TABLE + (inodeIndex * 16) + 8 + codePageIndex] != -1 && codePageIndex < 4) do
-//     multipush (R4, R5, R6);
-//     R1 = GET_FREE_PAGE;
-//     call MEMORY_MANAGER;
-//     multipop (R4, R5, R6);
-//     [PTBR + 2 * (4 + codePageIndex)] = R0;
-//     [PTBR + 2 * (4 + codePageIndex) + 1] = "0100";
-
-//     // Invoking Disk Load function of Device Manager
-//     R1 = DISK_LOAD;
-//     R2 = [SYSTEM_STATUS_TABLE + 1];
-//     R3 = R0;
-//     R4 = [INODE_TABLE + (inodeIndex * 16) + 8 + codePageIndex];
-//     call DEVICE_MANAGER; // loadi(R0, [INODE_TABLE + (inodeIndex * 16) + 8 + codePageIndex]);
-
-//     codePageIndex = codePageIndex + 1;
-// endwhile;
-
-// multipop (R0, R1, R2, R3);
 
 alias firstCodeBlock R6;
 

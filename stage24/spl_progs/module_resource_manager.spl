@@ -1,0 +1,224 @@
+// MODULE 0 - RESOURCE MANAGER
+
+// Function number in R1 and PID in R2
+alias funcNum R1;
+alias currentPID R2;
+alias returnValue R0;
+
+// Checks if function number is 8 for Acquire Terminal
+if (funcNum == ACQUIRE_TERMINAL) then
+    call AcquireTerminal;
+endif;
+
+// Checks if function number is 9 for Release Terminal
+if (funcNum == RELEASE_TERMINAL) then
+    call ReleaseTerminal;
+endif;
+
+// Checks if function number is 9 for Acquire Disk
+if (funcNum == ACQUIRE_DISK) then
+    call AcquireDisk;
+endif;
+
+if (funcNum == ACQUIRE_SEMAPHORE) then
+    call AcquireSemaphore;
+endif;
+
+if (funcNum == RELEASE_SEMAPHORE) then
+    call ReleaseSemaphore;
+endif;
+
+if (funcNum == ACQUIRE_INODE) then
+    call AcquireInode;
+endif;
+
+if (funcNum == RELEASE_INODE) then
+    call ReleaseInode;
+endif;
+
+if (funcNum == ACQUIRE_BUFFER) then
+    call AcquireBuffer;
+endif;
+
+if (funcNum == RELEASE_BUFFER) then
+    call ReleaseBuffer;
+endif;
+
+
+return;
+
+
+AcquireTerminal:
+    // If terminal busy, call scheduler (Should be in a loop, consider a case with 3 programs)
+    while ([TERMINAL_STATUS_TABLE] == 1) do
+        [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_TERMINAL;
+        multipush(R0, R1, R2);
+        call SCHEDULER;
+        multipop(R0, R1, R2);
+    endwhile;
+    // This is executed only when terminal becomes free and the process acquire the terminal
+    // STATUS is set to 1 and PID is set to the current PID in Terminal Status Table
+    [TERMINAL_STATUS_TABLE] = 1;
+    [TERMINAL_STATUS_TABLE + 1] = currentPID;
+    return;
+
+ReleaseTerminal:
+    // Check if PID in R2 and System Status Table matches. If not return -1.
+    if ([TERMINAL_STATUS_TABLE + 1] == currentPID) then
+        // STATUS set to 0 Terminal Status Table
+        [TERMINAL_STATUS_TABLE] = 0;
+        // Setting STATUS of processes having WAIT_TERMINAL to READY
+        alias newPID R3;
+        alias newProcessTable R4;
+        newPID = 1;
+        newProcessTable = PROCESS_TABLE + (newPID * 16);
+        while (newPID < 16) do
+            if ([newProcessTable + 4] == WAIT_TERMINAL) then
+                [newProcessTable + 4] = READY;
+            endif;
+            newPID = newPID + 1;
+            newProcessTable = PROCESS_TABLE + (newPID * 16);
+        endwhile;
+        // Setting return vale as 0 to show success
+        returnValue = 0;
+        return;
+    else
+        returnValue = -1;
+        return;
+    endif;
+
+// Argument: R2->PID
+AcquireDisk:
+    // While disk busy call scheduler
+    while ([DISK_STATUS_TABLE] == 1) do
+        [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_DISK;
+        multipush (R0, R1, R2);
+        call SCHEDULER;
+        multipop (R0, R1, R2);
+    endwhile;
+    // Setting STATUS and PID fields of the Disk Status Table
+    [DISK_STATUS_TABLE] = 1;
+    [DISK_STATUS_TABLE + 4] = currentPID;
+    return;
+
+AcquireSemaphore:
+    alias index R3;
+    index = 0;
+    // Find free entry in Semaphore Table
+    while ([SEMAPHORE_TABLE + 4 * index + 1] != 0 && index < MAX_SEM_COUNT) do
+        index = index + 1;
+    endwhile;
+    // Return -1 if no free entry
+    if (index == MAX_SEM_COUNT) then
+        returnValue = -1;
+        return;
+    endif;
+    // Increment PROCESS COUNT, LOCKING PID = -1
+    [SEMAPHORE_TABLE + 4 * index + 1] = 1;
+    [SEMAPHORE_TABLE + 4 * index] = -1;
+    // Return value -> index of the entry
+    returnValue = index;
+    return;
+
+alias PID R3; // Alias used by ReleaseSemaphore, AcquireInode, ReleaseInode, AcquireBuffer, ReleaseBuffer
+// Args: Index of Semaphore Table, PID
+ReleaseSemaphore:
+    alias semTableIndex R2;
+    if ([SEMAPHORE_TABLE + 4 * semTableIndex] == PID) then
+        [SEMAPHORE_TABLE + 4 * semTableIndex] = -1;
+        R4 = 0;
+        while (R4 < 16) do
+            if ([PROCESS_TABLE + (16 * R4) + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + (2 * R4) + 5] == semTableIndex) then
+                [PROCESS_TABLE + (16 * R4) + 4] = READY;
+            endif;
+            R4 = R4 + 1;
+        endwhile;
+    endif;
+    [SEMAPHORE_TABLE + 4 * semTableIndex + 1] = [SEMAPHORE_TABLE + 4 * semTableIndex + 1] - 1;
+    return;
+
+alias inodeIndex R2; // Alias used by AcquireInode, ReleaseInode
+AcquireInode:
+    // inodeIndex -> R2
+    // PID -> R3
+
+    // While inode locked
+    while ([FILE_STATUS_TABLE + (inodeIndex * 4)] != -1 && [FILE_STATUS_TABLE + (inodeIndex * 4)] != PID) do
+        // Set STATE as (WAIT_FILE, Inode Index)
+        [PROCESS_TABLE + (PID * 16) + 4] = WAIT_FILE;
+        [PROCESS_TABLE + (PID * 16) + 5] = inodeIndex;
+        multipush (R1, R2, R3);
+        call SCHEDULER;
+        multipop (R1, R2, R3);
+    endwhile;
+
+    // Check if file deleted then return -1
+    if ([INODE_TABLE + (inodeIndex * 16) + 1] == -1) then
+        returnValue = -1;
+        return;
+    endif;
+
+    // Lock the inode
+    [FILE_STATUS_TABLE + (inodeIndex * 4)] = PID;
+
+    returnValue = 0;
+    return;
+
+ReleaseInode:
+    // inodeIndex -> R2
+    // PID -> R3
+
+    // If PID given != Locking PID, return -1
+    if ([FILE_STATUS_TABLE + (inodeIndex * 4)] != PID) then
+        returnValue = -1;
+        return;
+    endif;
+
+    // Free lock
+    [FILE_STATUS_TABLE + (inodeIndex * 4)] = -1;
+
+    // Loop through Process Table and set (WAIT_FILE, Inode Index) to (READY, _)
+    alias index R1;
+    index = 0;
+    while (index < MAX_PROC_NUM) do
+        if ([PROCESS_TABLE + (index * 16) + 4] == WAIT_FILE && [PROCESS_TABLE + (index * 16) + 5] == inodeIndex) then
+            [PROCESS_TABLE + (index * 16) + 4] = READY;
+        endif;
+        index = index + 1;
+    endwhile;
+
+    // Return value 0
+    returnValue = 0;
+    return;
+
+alias bufferNumber R2; // Alias used by AcquireBuffer, ReleaseBuffer
+AcquireBuffer: 
+    while([BUFFER_TABLE + (bufferNumber * 4) + 2] != -1 && [BUFFER_TABLE + (bufferNumber * 4) + 2] != PID) do
+        [PROCESS_TABLE + (PID * 16) + 4] = WAIT_BUFFER;
+        [PROCESS_TABLE + (PID * 16) + 5] = bufferNumber;
+        multipush (R1, R2, R3);
+        call SCHEDULER;
+        multipop (R1, R2, R3);
+    endwhile;
+
+    [BUFFER_TABLE + (bufferNumber * 4) + 2] = PID;
+    return;
+
+ReleaseBuffer:
+    if ([BUFFER_TABLE + (bufferNumber * 4) + 2] != PID) then
+        returnValue = -1;
+        return;
+    endif;
+
+    [BUFFER_TABLE + (bufferNumber * 4) + 2] = -1;
+
+    R4 = 1;
+    while (R4 < MAX_PROC_NUM) do
+        if ([PROCESS_TABLE + (R4 * 16) + 4] == WAIT_BUFFER && [PROCESS_TABLE + (R4 * 16) + 5] == bufferNumber) then
+            [PROCESS_TABLE + (R4 * 16) + 4] = READY;
+        endif;
+        R4 = R4 + 1;
+    endwhile;
+
+    returnValue = 0;
+    return;

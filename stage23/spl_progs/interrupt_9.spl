@@ -165,12 +165,12 @@ alias inodeTableEntry R7;
 diskMapEntry = DISK_MAP_TABLE + (currentPID * 10);
 inodeTableEntry = INODE_TABLE + (inodeIndex * 16);
 
-// alias diskMapIndex R8;
-// diskMapIndex = 0;
-// while (diskMapIndex < 10) do
-//     [diskMapEntry+ diskMapIndex] = -1;
-//     diskMapIndex = diskMapIndex + 1;
-// endwhile;
+alias diskMapIndex R8;
+diskMapIndex = 0;
+while (diskMapIndex < 10) do
+    [diskMapEntry+ diskMapIndex] = -1;
+    diskMapIndex = diskMapIndex + 1;
+endwhile;
 
 alias codePageIndex R8;
 codePageIndex = 0;
