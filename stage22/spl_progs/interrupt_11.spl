@@ -39,7 +39,6 @@ Wait:
     [currentProcessTable + 9] = sysCallNumber;
     waitPID = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
     if (waitPID == currentPID || waitPID < 0 || waitPID > 15 || [PROCESS_TABLE + (waitPID * 16) + 4] == TERMINATED) then
-        print "No can do";
         [[PTBR + ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
         [currentProcessTable + 9] = 0;
         SP = [currentProcessTable + 13];

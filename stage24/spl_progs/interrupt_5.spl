@@ -83,7 +83,7 @@ CloseSysCall:
         return;
     endif;
 
-    resourceTable = [currentProcessTable + 11] + RESOURCE_TABLE_OFFSET;
+    resourceTable = [currentProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
 
     // If Resource Identifier field of Resource Table entry invalid or not file, return -1
     if ([resourceTable + (fileDescriptor * 2)] != FILE) then
