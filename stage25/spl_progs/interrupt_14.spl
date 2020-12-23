@@ -1,0 +1,81 @@
+// INTERRUPT 14 - SEMLOCK, SEMUNLOCK
+
+alias currentPID R0;
+alias currentProcessTable R1;
+alias sysCallNumber R2;
+alias userSP R4;
+alias SEMID R5;
+alias resourceTable R6;
+alias semTableEntry R7;
+
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+
+[currentProcessTable + 13] = SP;
+userSP = SP;
+SP = [currentProcessTable + 11] * 512 - 1;
+
+sysCallNumber = [[PTBR + 2 * ((userSP - 5)/512)] * 512 + ((userSP - 5)%512)];
+
+if (sysCallNumber == INT_SEMLOCK) then
+    call SemLock;
+endif;
+
+if (sysCallNumber == INT_SEMUNLOCK) then
+    call SemUnlock;
+endif;
+
+[currentProcessTable + 9] = 0;
+SP = [currentProcessTable + 13];
+ireturn;
+
+SemLock:
+    [currentProcessTable + 9] = sysCallNumber;
+    SEMID = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
+	resourceTable = [currentProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+	if (SEMID < 0 || SEMID > 7 || [resourceTable + 2 * SEMID] != 1) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
+        return;
+    endif;
+    semTableEntry = SEMAPHORE_TABLE + 4 * [resourceTable + 1];
+    while([semTableEntry] != -1 && [semTableEntry] != currentPID) do
+        [currentProcessTable + 4] = WAIT_SEMAPHORE;
+        [currentProcessTable + 5] = [resourceTable + 1];
+        multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+        call SCHEDULER;
+        multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+    endwhile;
+    [semTableEntry] = currentPID;
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = 0;
+    return;
+
+SemUnlock:
+    [currentProcessTable + 9] = sysCallNumber;
+    SEMID = [[PTBR + 2 * ((userSP - 4)/512)] + ((userSP - 4)%512)];
+	resourceTable = [currentProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+	if (SEMID < 0 || SEMID > 7 || [resourceTable + 2 * SEMID] != 1) then
+        [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
+        return;
+    endif;
+    semTableEntry = SEMAPHORE_TABLE + 4 * [resourceTable + 1];
+    if ([semTableEntry] != -1) then
+        if ([semTableEntry] != currentPID) then
+            [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -2;
+            return;
+        endif;
+        [semTableEntry] = -1;
+        
+        alias PID R8;
+        alias newProcessTable R9;
+        PID = 1;
+        newProcessTable = PROCESS_TABLE + (PID * 16);
+        while (PID < 16) do
+            if ([newProcessTable + 4] == WAIT_SEMAPHORE && [newProcessTable + 5] == [resourceTable + 1]) then
+                [newProcessTable + 4] = READY;
+            endif;
+            PID = PID + 1;
+            newProcessTable = PROCESS_TABLE + (PID * 16);
+        endwhile;
+    endif;
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = 0;
+    return;

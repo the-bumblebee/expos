@@ -1,0 +1,137 @@
+// INTERRUPT 6 - READ SYSTEM CALL
+
+alias userSP R0;
+alias processTable R1;
+userSP = SP;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+
+[processTable + 13] = userSP;
+SP = [processTable + 11] * 512 - 1;
+[processTable + 9] = INT_READ;
+
+alias fileDescriptor R2;
+alias returnAddress R3;
+fileDescriptor = [[PTBR + 2 * ((userSP-4)/512)] * 512 + (userSP-4)%512];
+returnAddress = [PTBR + 2 * ((userSP-1)/512)] * 512 + ((userSP-1)%512);
+
+// File descriptor -1 for terminal
+if (fileDescriptor == -1) then
+    call ReadTerminal;
+endif;
+
+// File descriptor in [0, 7], else return -1
+if (fileDescriptor >= 0 && fileDescriptor <= 7) then
+    call ReadFile;
+else
+    [returnAddress] = -1;
+endif;
+
+
+SP = userSP;
+[processTable + 9] = 0;
+ireturn;
+
+ReadTerminal:
+    // Retrieve word address from stack (second argument - [userSP - 3])
+    alias wordAddress R4;
+    wordAddress = [[PTBR + 2 * ((userSP-3)/512)] * 512 + ((userSP-3)%512)];
+
+    multipush(R0, R1, R2, R3, R4);
+    R1 = TERMINAL_READ;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = wordAddress;
+    call DEVICE_MANAGER;
+    multipop(R0, R1, R2, R3, R4);
+
+    // Return value indicating success
+    [returnAddress] = 0;
+    return;
+
+ReadFile:
+    alias memBuffer R4;
+
+    memBuffer = [[PTBR + 2 * ((userSP-3)/512)] * 512 + ((userSP-3)%512)]; // Logical address
+    memBuffer = [PTBR + 2  * (memBuffer/512)] * 512 + (memBuffer%512);
+
+    alias resourceTable R5;
+    resourceTable = [processTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+
+    if ([resourceTable + (fileDescriptor * 2)] != FILE) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    alias openFileEntry R6;
+    alias inodeIndex R7;
+    // Open File index = [resourceTable + (fileDescriptor * 2) + 1]
+    openFileEntry = OPEN_FILE_TABLE + [resourceTable + (fileDescriptor * 2) + 1] * 4;
+    inodeIndex = [openFileEntry];
+
+    alias retVal R8;
+    multipush (R0, R1, R2, R3, R4, R5, R6, R7);
+    R1 = ACQUIRE_INODE;
+    R2 = inodeIndex; // R7
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    retVal = R0;
+    multipop (R0, R1, R2, R3, R4, R5, R6, R7);
+
+    if (retVal == -1) then
+		[returnAddress] = -1;
+		return;
+    endif;
+
+    alias lSeek R8;
+    lSeek = [openFileEntry + 2];
+
+    if ([openFileEntry] == INODE_ROOT) then
+        if (lSeek >= 480) then
+            multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8);
+            R1 = RELEASE_INODE;
+            R2 = inodeIndex; //R7
+            R3 = [SYSTEM_STATUS_TABLE + 1];
+            call RESOURCE_MANAGER;
+            multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8);
+            [returnAddress] = -2;
+            return;
+        endif;
+        [memBuffer] = [ROOT_FILE + lSeek];
+        [openFileEntry + 2] = lSeek + 1;
+    else
+        if (lSeek >= [INODE_TABLE + (inodeIndex * 16) + 2]) then
+            multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8);
+            R1 = RELEASE_INODE;
+            R2 = inodeIndex; //R7
+            R3 = [SYSTEM_STATUS_TABLE + 1];
+            call RESOURCE_MANAGER;
+            multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8);
+            [returnAddress] = -2;
+            return;
+        endif;
+
+        alias diskBlockNumber R9;
+        alias offset R10;
+        // Block Index = lSeek / 512
+        diskBlockNumber = [INODE_TABLE + (inodeIndex * 16) + 8 + (lSeek / 512)];
+        offset = lSeek % 512;
+
+        multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10);
+        R1 = BUFFERED_READ;
+        R2 = diskBlockNumber; // R9
+        R3 = offset; // R10
+        R4 = memBuffer; // R4
+        call FILE_MANAGER;
+        multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10);
+
+        // Increment LSEEK in Open File Table
+        [openFileEntry + 2] = lSeek + 1;
+    endif;
+
+    multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10);
+    R1 = RELEASE_INODE;
+    R2 = inodeIndex; //R7
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10);
+    [returnAddress] = 0;
+	return;

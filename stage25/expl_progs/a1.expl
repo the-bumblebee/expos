@@ -1,0 +1,35 @@
+int main() 
+{
+decl
+    int permission, temp, file, i;
+    str filename, word;
+enddecl
+begin
+    temp = exposcall ("Write", -2, "Filename>");
+    temp = exposcall ("Read", -1, filename);
+    temp = exposcall ("Write", -2, "Permission>");
+    temp = exposcall ("Read", -1, permission);
+    temp = exposcall ("Create", filename, permission);
+    if (temp < 0) then
+        temp = exposcall ("Write", -2, "Error!");
+    else
+        file = exposcall ("Open", filename);
+        if (file < 0) then
+            temp = exposcall ("Write", -2, "Error!");
+        else
+            i = 1;
+            while (i <= 1100) do
+                temp = exposcall ("Write", file, i);
+                i = i + 1;
+            endwhile;
+            temp = exposcall ("Seek", file, -1);
+            while (temp == 0) do
+                temp = exposcall ("Read", file, word);
+                temp = exposcall ("Write", -2, word);
+                temp = exposcall ("Seek", file, -2);
+            endwhile;
+        endif;
+    endif;
+    return 0;
+end
+}

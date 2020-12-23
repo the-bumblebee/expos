@@ -1,0 +1,23 @@
+int main()
+{
+decl
+	int temp, file, flag;
+	str filename, word;
+enddecl
+begin
+	temp = exposcall("Write", -2, "Filename>");
+	temp = exposcall("Read", -1, filename);
+	file = exposcall("Open", filename);
+	
+	if (file < 0) then
+		temp = exposcall("Write", -2, "Error!");
+	else
+		flag = exposcall("Read", file, word);
+		while(flag == 0) do
+			temp = exposcall("Write", -2, word);
+			flag = exposcall("Read", file, word);
+		endwhile;
+	endif;
+	return 0;
+end
+}

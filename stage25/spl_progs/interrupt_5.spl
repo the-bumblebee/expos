@@ -1,0 +1,178 @@
+// INTERRUPT 5 - OPEN, CLOSE, SEEK
+
+alias userSP R0;
+alias processTable R1;
+alias sysCallNumber R2;
+alias returnAddress R3;
+alias resourceTable R4;
+
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+[processTable + 13] = SP;
+userSP = SP;
+SP = [processTable + 11] * 512 - 1;
+sysCallNumber = [[PTBR + 2 * ((userSP - 5)/512)] * 512 + ((userSP - 5)%512)];
+returnAddress = [PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512);
+resourceTable = [processTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+
+if (sysCallNumber == INT_OPEN) then
+    call OpenSysCall;
+endif;
+
+if (sysCallNumber == INT_CLOSE) then
+    call CloseSysCall;
+endif;
+
+if (sysCallNumber == INT_SEEK) then
+    call SeekSysCall;
+endif;
+
+[processTable + 9] = 0;
+SP = [processTable + 13];
+ireturn;
+
+// Args: filename
+OpenSysCall:
+    alias fileName R5;
+    fileName = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
+    [processTable + 9] = sysCallNumber;
+
+    // Find a free resource table entry.
+    // If none available, return -3
+    alias freeEntry R6;
+    freeEntry = 0;
+    while ([resourceTable + (freeEntry * 2)] != -1 && freeEntry < 8) do
+        freeEntry = freeEntry + 1;
+    endwhile;
+    if (freeEntry == 8) then
+        [returnAddress] = -3;
+        return;
+    endif;
+
+    // Call Open function from File Manager Module to get Open File entry
+    // If open fails, return error code
+    multipush (R0, R1, R2, R3, R4, R5, R6);
+    R1 = OPEN;
+    R2 = fileName; // R5
+    call FILE_MANAGER;
+    R7 = R0;
+    if (R0 < 0) then
+        multipop (R0, R1, R2, R3, R4, R5, R6);
+        [returnAddress] = R7;
+        return;
+    endif;
+
+    alias fileTableIndex R7;
+    fileTableIndex = R0;
+    multipop (R0, R1, R2, R3, R4, R5, R6);
+    // Set Per-Process Table entry
+    // Set Resource Identifier to FILE and Open File Table index to the free Open File Table entry found
+    [resourceTable + (freeEntry * 2)] = FILE;
+    [resourceTable + (freeEntry * 2) + 1] = fileTableIndex;
+
+    // Return index of Per-Process Resource Table entry
+    [returnAddress] = freeEntry;
+    return;
+
+
+alias fileDescriptor R5; // Used by CloseSysCall, SeekSysCall
+// Args: Index of Per-Process Table entry
+CloseSysCall:
+    fileDescriptor = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
+    [processTable + 9] = sysCallNumber;
+
+    // If file descriptor invalid, return -1
+    if (fileDescriptor < 0 || fileDescriptor > 0) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    // If Resource Identifier field of Resource Table entry invalid or not file, return -1
+    if ([resourceTable + (fileDescriptor * 2)] != FILE) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    // Call Close function in File Manager module with Open File Table index as argument
+    multipush (R0, R1, R2, R3, R4, R5);
+    R1 = CLOSE;
+    R2 = [resourceTable + (fileDescriptor * 2) + 1];
+    call FILE_MANAGER;
+    multipop (R0, R1, R2, R3, R4, R5);
+
+    // Invalidate Per-Process Resource Table entry
+    [resourceTable + (fileDescriptor * 2)] = -1;
+
+    // Return with 0 to indicate success
+    [returnAddress] = 0;
+    return;
+
+SeekSysCall:
+    alias offset R6;
+    fileDescriptor = [[PTBR + 2 * ((userSP - 4)/512)] * 512 + ((userSP - 4)%512)];
+    offset = [[PTBR + 2 * ((userSP - 3)/512)] * 512 + ((userSP - 3)%512)];
+    [processTable + 9] = sysCallNumber;
+
+    if (fileDescriptor < 0 || fileDescriptor > 7) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    if ([resourceTable + (fileDescriptor * 2)] != FILE) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    alias openFileEntry R7;
+    alias inodeIndex R8;
+    openFileEntry = OPEN_FILE_TABLE + [resourceTable + (fileDescriptor * 2) + 1] * 4;
+    inodeIndex = [openFileEntry];
+
+    alias retVal R9;
+    multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8);
+    R1 = ACQUIRE_INODE;
+    R2 = inodeIndex; // R8
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    retVal = R0;
+    multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8);
+
+    if (retVal == -1) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    alias lSeek R9;
+    lSeek = [openFileEntry + 2];
+
+    if (lSeek + offset < 0) then
+        multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+        R1 = RELEASE_INODE;
+        R2 = inodeIndex; // R8
+        R3 = [SYSTEM_STATUS_TABLE + 1];
+        call RESOURCE_MANAGER;
+        multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+
+        [returnAddress] = -2;
+        return;
+    endif;
+
+    if (offset == 0) then
+        [openFileEntry + 2] = 0;
+    else
+        if (lSeek + offset > [INODE_TABLE + (inodeIndex * 16) + 2]) then
+            [openFileEntry + 2] = [INODE_TABLE + (inodeIndex * 16) + 2];
+        else
+            [openFileEntry + 2] = lSeek + offset;
+        endif;
+    endif;
+
+    multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+    R1 = RELEASE_INODE;
+    R2 = inodeIndex; // R8
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+
+    [returnAddress] = 0;
+
+    return;

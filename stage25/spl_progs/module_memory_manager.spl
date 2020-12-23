@@ -1,0 +1,148 @@
+// MODULE 2 - MEMORY MANAGER
+
+alias funcNum R1;
+
+if (funcNum == GET_FREE_PAGE) then
+    call GetFreePage;
+endif;
+
+if (funcNum == RELEASE_PAGE) then
+    call ReleasePage;
+endif;
+
+if (funcNum == GET_CODE_PAGE) then
+    call GetCodePage;
+endif;
+
+if (funcNum == RELEASE_BLOCK) then
+    call ReleaseBlock;
+endif;
+
+if (funcNum == GET_FREE_BLOCK) then
+    call GetFreeBlock;
+endif;
+
+return;
+
+// Args: NIL
+// Return Value: Free Page Number
+GetFreePage:
+    // Increment WAIT_MEM_COUNT
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] + 1;
+    // Busy loop while memory full
+    while ([SYSTEM_STATUS_TABLE + 2] <= 0) do
+        // Setting STATE as WAIT_MEM
+        [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 4] = WAIT_MEM;
+        // Invoke Scheduler
+        call SCHEDULER;
+    endwhile;
+    // Decrement WAIT_MEM_COUNT and MEM_FREE_COUNT
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] - 1;
+    [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1;
+    // Getting a free page from Memory Free List
+    alias freePage R2;
+    freePage = 76;
+    while ([MEMORY_FREE_LIST + freePage] != 0 && freePage < NUM_MEM_PAGES) do
+        freePage = freePage + 1;
+    endwhile;
+    // Doesn't need to check if the page obtained is > 127 as if it were the case, STATUS woud be WAIT_MEM
+    // Increment Mem Free Lst
+    [MEMORY_FREE_LIST + freePage] = [MEMORY_FREE_LIST + freePage] + 1;
+    alias returnVal R0;
+    // Return value is the free page obtained
+    returnVal = freePage;
+    return;
+
+// Args: Page Number
+// Return value: NIL
+ReleasePage:
+    // Decrementing corresponding Memory Free List entry
+    alias page R2;
+    [MEMORY_FREE_LIST + page] = [MEMORY_FREE_LIST + page] - 1;
+    // If entry = 0, update MEM_FREE_COUNT of System Status Table
+    if ([MEMORY_FREE_LIST + page] == 0) then
+        [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] + 1;
+    endif;
+    // Setting processes with STATUS as WAIT_MEM to READY
+    alias PID R3;
+    PID = 1;
+    while (PID < 16) do
+        if ([PROCESS_TABLE + (PID * 16) + 4] == WAIT_MEM) then
+            [PROCESS_TABLE + (PID * 16) + 4] = READY;
+        endif;
+        PID = PID + 1;
+    endwhile;
+    return;
+
+// Args: Block Number
+// Return value: Page Number
+GetCodePage:
+    alias diskBlock R2;
+    // Go through all disk map table entries of all processes
+    // If given block number present and corresponds to valid page table entry, return memory page number
+        // Increment memory free list entry of that page
+    alias processID R3;
+    alias codePageIndex R4;
+    alias diskMapEntry R5;
+    alias pageTableEntry R6;
+    alias memoryPageNumber R0;
+    memoryPageNumber = -1;
+    processID = 0;
+    while (processID < 16) do
+        codePageIndex = 0;
+        diskMapEntry = DISK_MAP_TABLE + (processID * 10);
+        pageTableEntry = PAGE_TABLE_BASE + (processID * 20);
+        while (codePageIndex < 4) do
+            if (diskBlock == [diskMapEntry + (4 + codePageIndex)] && [pageTableEntry + 2 * (4 + codePageIndex) + 1] == "0100") then
+                memoryPageNumber = [pageTableEntry + 2 * (4 + codePageIndex)];
+                break;
+            endif;
+            codePageIndex = codePageIndex + 1;
+        endwhile;
+        processID = processID + 1;
+    endwhile;
+    if (memoryPageNumber != -1) then
+        return;
+    endif;
+    
+    // If code page not in memory, invoke Get Free Page function
+    // Load disk block to newly acquired memory page by invoking Disk Load of Device Manager Module
+    // Return memory page number to which code block has been loaded
+    multipush (R1, R2);
+    R1 = GET_FREE_PAGE;
+    call GetFreePage;
+    multipop (R1, R2);
+
+    multipush (R0, R1, R2);
+    R4 = R2;
+    R1 = DISK_LOAD;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = R0;
+    call DEVICE_MANAGER;
+    multipop (R0, R1, R2);
+    // R0 already has the memory page number
+
+    return;
+
+// Args: Block Number, PID
+// Return value: NIL
+ReleaseBlock:
+    alias blockNumber R2;
+    [DISK_FREE_LIST + blockNumber] = [DISK_FREE_LIST + blockNumber] - 1;
+    return;
+
+GetFreeBlock:
+    alias diskFreeIndex R2;
+    diskFreeIndex = DISK_FREE_AREA;
+    while ([DISK_FREE_LIST + diskFreeIndex] != 0 && diskFreeIndex < DISK_SWAP_AREA) do
+        diskFreeIndex = diskFreeIndex + 1;
+    endwhile;
+
+    if (diskFreeIndex == DISK_SWAP_AREA) then
+        R0 = -1;
+        return;
+    endif;
+
+    [DISK_FREE_LIST + diskFreeIndex] = 1;
+    R0 = diskFreeIndex;
+    return;

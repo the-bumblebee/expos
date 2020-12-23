@@ -1,0 +1,32 @@
+// DISK INTERRUPT HANDLER
+
+// SAve SP and set to kernel stack
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+// USE REGISTERS ONLY AFTER THIS
+//Saving the user context
+backup;
+
+// Set STATUS of the Disk Status Table to 0 indicating the disk is free
+[DISK_STATUS_TABLE] = 0;
+
+// Iterate through the processes and set processes with WAIT_DISK STATE as READY
+alias PID R0;
+PID = 1;
+while (PID < 16) do
+    if ([PROCESS_TABLE + (PID * 16) + 4] == WAIT_DISK) then
+        [PROCESS_TABLE + (PID * 16) + 4] = READY;
+    endif;
+    PID = PID + 1;
+endwhile;
+
+// DO NOT USE REGISTERS BEYOND THIS POINT
+//Restoring the user context
+restore;
+
+// Setting SP to user SP saved in process table.
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+// Passing control back to usser mode
+ireturn;
