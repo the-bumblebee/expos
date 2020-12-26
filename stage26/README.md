@@ -12,3 +12,5 @@ Newusr. Remusr. Setpwd. Getuname. Getuid.
 ### Boot Module
 
 ### OS Startup Code
+
+**TODO:** Modify Delete system call in interrupt 4. Invalid not just the filename but all the fields of an inode entry. Otherwise, a user cannot be removed from the system even after the files are deleted.
