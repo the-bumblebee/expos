@@ -1,0 +1,76 @@
+// INTERRUPT 15 - SHUTDOWN SYSTEM CALL
+
+alias currentPID R0;
+alias currentProcessTable R1;
+alias userSP R2;
+
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+
+[currentProcessTable + 13] = SP;
+userSP = SP;
+SP = [currentProcessTable + 11] * 512 - 1;
+
+[currentProcessTable + 9] = INT_SHUTDOWN;
+
+// If not shell or not root
+if (currentPID != SHELL_PROCESS || [currentProcessTable + 3] != ROOT) then
+    [[PTBR + 2 * ((userSP - 1)/512)] * 512 + ((userSP - 1)%512)] = -1;
+    [currentProcessTable + 9] = 0;
+    SP = [currentProcessTable + 13];
+    ireturn;
+endif;
+
+// ---- Stage 15 ----
+// Kill All
+multipush (R0, R1, R2);
+R1 = KILL_ALL;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+call PROCESS_MANAGER;
+multipop (R0, R1, R2);
+
+// Buffer table
+alias bufferIndex R3;
+bufferIndex = 0;
+while (bufferIndex < MAX_BUFFER) do
+    if ([BUFFER_TABLE + (bufferIndex * 4) + 1] == 1) then
+        multipush (R0, R1, R2, R3);
+        R1 = DISK_LOAD;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R3 = BUFFER_BASE + bufferIndex;
+        R4 = [BUFFER_TABLE + (bufferIndex * 4)];
+        call DEVICE_MANAGER;
+        multipop (R0, R1, R2, R3);
+    endif;
+    bufferIndex = bufferIndex + 1;
+endwhile;
+// ------------------
+breakpoint;
+// Storing Inode Table and User Table
+R1 = DISK_STORE;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = 59;
+R4 = 3;
+call DEVICE_MANAGER;
+
+R1 = DISK_STORE;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = 60;
+R4 = 4;
+call DEVICE_MANAGER;
+
+// Storing Disk Free List
+R1 = DISK_STORE;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = 61;
+R4 = 2;
+call DEVICE_MANAGER;
+
+// Storing Root File
+R1 = DISK_STORE;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+R3 = 62;
+R4 = 5;
+call DEVICE_MANAGER;
+
+halt;

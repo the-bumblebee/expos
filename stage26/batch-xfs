@@ -1,0 +1,38 @@
+fdisk
+load --module 7 $HOME/expos-roadmap/stage26/spl_progs/module_boot.xsm
+load --module 5 $HOME/expos-roadmap/stage26/spl_progs/module_scheduler.xsm
+load --module 4 $HOME/expos-roadmap/stage26/spl_progs/module_device_manager.xsm
+load --module 0 $HOME/expos-roadmap/stage26/spl_progs/module_resource_manager.xsm
+load --module 1 $HOME/expos-roadmap/stage26/spl_progs/module_process_manager.xsm
+load --module 2 $HOME/expos-roadmap/stage26/spl_progs/module_memory_manager.xsm
+load --module 3 $HOME/expos-roadmap/stage26/spl_progs/module_file_manager.xsm
+load --idle $HOME/expos-roadmap/stage26/expl_progs/idle.xsm
+load --init $HOME/expos-roadmap/stage26/expl_progs/init.xsm
+load --shell $HOME/expos-roadmap/stage26/expl_progs/shell.xsm
+load --int=17 $HOME/expos-roadmap/stage26/spl_progs/interrupt_17.xsm
+load --int=16 $HOME/expos-roadmap/stage26/spl_progs/interrupt_16.xsm
+load --int=15 $HOME/expos-roadmap/stage26/spl_progs/interrupt_15.xsm
+load --int=14 $HOME/expos-roadmap/stage26/spl_progs/interrupt_14.xsm
+load --int=13 $HOME/expos-roadmap/stage26/spl_progs/interrupt_13.xsm
+load --int=12 $HOME/expos-roadmap/stage26/spl_progs/interrupt_12.xsm
+load --int=11 $HOME/expos-roadmap/stage26/spl_progs/interrupt_11.xsm
+load --int=10 $HOME/expos-roadmap/stage26/spl_progs/interrupt_10.xsm
+load --int=9 $HOME/expos-roadmap/stage26/spl_progs/interrupt_9.xsm
+load --int=8 $HOME/expos-roadmap/stage26/spl_progs/interrupt_8.xsm
+load --int=7 $HOME/expos-roadmap/stage26/spl_progs/interrupt_7.xsm
+load --int=6 $HOME/expos-roadmap/stage26/spl_progs/interrupt_6.xsm
+load --int=5 $HOME/expos-roadmap/stage26/spl_progs/interrupt_5.xsm
+load --int=4 $HOME/expos-roadmap/stage26/spl_progs/interrupt_4.xsm
+load --exhandler $HOME/expos-roadmap/stage26/spl_progs/exception_handler.xsm
+load --os $HOME/expos-roadmap/stage26/spl_progs/os_startup.xsm
+load --library $HOME/myexpos/expl/library.lib
+load --int=timer $HOME/expos-roadmap/stage26/spl_progs/sample_timer.xsm
+load --int=console $HOME/expos-roadmap/stage26/spl_progs/console_interrupt_handler.xsm
+load --int=disk $HOME/expos-roadmap/stage26/spl_progs/disk_interrupt_handler.xsm
+load --exec $HOME/expos-roadmap/stage26/expl_progs/prog.xsm
+load --exec $HOME/expos-roadmap/stage26/expl_progs/ls.xsm
+load --exec $HOME/expos-roadmap/stage26/expl_progs/cat.xsm
+load --exec $HOME/expos-roadmap/stage26/expl_progs/cp.xsm
+load --exec $HOME/expos-roadmap/stage26/expl_progs/rm.xsm
+load --exec $HOME/expos-roadmap/stage26/expl_progs/lu.xsm
+load --data $HOME/expos-roadmap/stage26/data.dat

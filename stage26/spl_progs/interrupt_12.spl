@@ -1,0 +1,42 @@
+// INTERRUPT 12 - LOGOUT SYSTEM CALL
+
+alias userSP R0;
+alias processTable R1;
+userSP = SP;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+[processTable + 13] = userSP;
+[processTable + 9] = INT_LOGOUT;
+SP = [processTable + 11] * 512 - 1;
+
+alias returnAddress R2;
+returnAddress = [PTBR + 2 * ((userSP-1)/512)] * 512 + (userSP -1)%512;
+
+// Check if process shell
+if ([SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS) then
+    SP = userSP;
+    [processTable + 9] = 0;
+    [returnAddress] = -1;
+    ireturn;
+endif;
+
+// Kill all process except shell
+multipush (R0, R1, R2);
+R1 = KILL_ALL;
+R2 = [SYSTEM_STATUS_TABLE + 1];
+call PROCESS_MANAGER;
+multipop (R0, R1, R2);
+
+// Set STATE as TERMINATED
+[processTable + 4] = TERMINATED;
+
+// Entry point of shell in stack
+[78 * 512] = [67 * 512 + 1];
+[processTable + 13] = 8 * 512;
+
+// Wakeup Login Process
+[PROCESS_TABLE + (LOGIN_PROCESS * 16) + 4] = READY;
+
+// User to 0 (kernel)
+[SYSTEM_STATUS_TABLE] = KERNEL;
+
+call SCHEDULER;

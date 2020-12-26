@@ -1,0 +1,48 @@
+int main()
+{
+    decl
+        int temp;
+        str command, username, password;
+    enddecl
+    begin
+        while (1 == 1) do
+            temp = exposcall ("Write", -2, " ");
+            temp = exposcall ("Write", -2, "---Shell---");
+            temp = exposcall ("Read", -1, command);
+            if (command == "shutdown") then
+                temp = exposcall ("Shutdown");
+                continue;
+            endif;
+            if (command == "logout") then
+                temp = exposcall ("Logout");
+                continue;
+            endif;
+            if (command == "Newusr" OR command == "Setpwd") then
+                temp = exposcall ("Read", -1, username);
+                temp = exposcall ("Read", -1, password);
+                temp = exposcall (command, username, password);
+                continue;
+            endif;
+            if (command == "Getuname" OR command == "Getuid") then
+                temp = exposcall ("Read", -1, username);
+                temp = exposcall (command, username);
+                temp = exposcall ("Write", -2, temp);
+                continue;
+            endif;
+            if (command == "Remusr") then
+                temp = exposcall ("Read", -1, username);
+                temp = exposcall (command,  username);
+                continue;
+            endif;
+            temp = exposcall ("Fork");
+            if (temp == 0) then
+                temp = exposcall ("Exec", command);
+                break;
+            else
+                temp = exposcall ("Wait", temp);
+            endif;
+        endwhile;
+        temp = exposcall ("Write", -2, "BAD COMMAND");
+        return 0;
+    end
+}

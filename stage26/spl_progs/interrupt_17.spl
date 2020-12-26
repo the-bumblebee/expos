@@ -1,0 +1,71 @@
+// INTERRUPT 17 - LOGIN SYSTEM CALL
+
+alias userSP R0;
+alias processTable R1;
+userSP = SP;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+[processTable + 13] = userSP;
+[processTable + 9] = INT_LOGIN;
+SP = [processTable + 11] * 512 - 1;
+
+alias username R2;
+alias password R3;
+alias returnAddress R4;
+username = [[PTBR + 2 * ((userSP-4)/512)] * 512 + (userSP-4)%512];
+password = [[PTBR + 2 * ((userSP-3)/512)] * 512 + (userSP-3)%512];
+returnAddress = [PTBR + 2 * ((userSP-1)/512)] * 512 + (userSP -1)%512;
+
+// PID should be 1
+if ([SYSTEM_STATUS_TABLE + 1] != LOGIN_PROCESS) then
+    SP = userSP;
+    [processTable + 9] = 0;
+    [returnAddress] = -2;
+    ireturn;
+endif;
+
+
+// Get User Table entry
+alias userID R5;
+userID = 0;
+while (userID < MAX_USER_NUM && [USER_TABLE + (userID * 2)] != username) do
+    userID = userID + 1;
+endwhile;
+if (userID == MAX_USER_NUM) then
+    SP = userSP;
+    [processTable + 9] = 0;
+    [returnAddress] = -1;
+    ireturn;
+endif;
+
+// Encrypt password
+encrypt password; // Encrypts the password in R3 and stores it in R3
+
+// Check ENCRYPTED PASSWORD field of User Table entry
+if ([USER_TABLE + (userID * 2) + 1] != password) then
+    SP = userSP;
+    [processTable + 9] = 0;
+    [returnAddress] = -1;
+    ireturn;
+endif;
+
+// Set STATE as CREATED and USERID in Process Table of shell process
+alias shellProcessTable R6;
+shellProcessTable = PROCESS_TABLE + (SHELL_PROCESS * 16);
+[shellProcessTable + 4] = CREATED;
+[shellProcessTable + 3] = userID;
+
+// Set STATE as (WAIT_PROCESS, 2) for current process (login)
+[processTable + 4] = WAIT_PROCESS;
+[processTable + 5] = SHELL_PROCESS;
+
+// Set CURRENT_USER_ID in System Status Table
+[SYSTEM_STATUS_TABLE] = userID;
+multipush (R0, R1, R4); // userSP, processTable,, returnAddress only needed
+call SCHEDULER;
+multipop (R0, R1, R4);
+
+SP = userSP;
+[processTable + 9] = 0;
+[returnAddress] = 0;
+
+ireturn;

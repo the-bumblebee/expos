@@ -1,0 +1,32 @@
+int main()
+{
+decl
+	int temp, file1, file2, flag;
+	str filename, newfilename, word;
+enddecl
+begin
+    temp = exposcall ("Write", -2, "Filename>");
+	temp = exposcall ("Read", -1, filename);
+    file1 = exposcall ("Open", filename);
+
+    if (file1 < 0) then
+        temp = exposcall ("Write", -2, "Error!");
+    else
+        temp = exposcall ("Write", -2, "Filename2>");
+        temp = exposcall ("Read", -1, newfilename);
+        temp = exposcall ("Create", newfilename, 1);
+
+        if (temp < 0) then
+            temp = exposcall ("Write", -2, "Error!");
+        else
+            file2 = exposcall ("Open", newfilename);
+            flag = exposcall ("Read", file1, word);
+            while (flag == 0) do
+                temp = exposcall ("Write", file2, word);
+                flag = exposcall ("Read", file1, word);
+            endwhile;
+        endif;
+    endif;
+    return 0;
+end
+}

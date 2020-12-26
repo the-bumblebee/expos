@@ -1,0 +1,226 @@
+// INTERRUPT 16 - NEWUSR, REMUSR, SETPWD, GETUNAME, GETUID
+
+alias userSP R0;
+alias processTable R1;
+alias returnAddress R2;
+alias sysCallNumber R3;
+
+userSP = SP;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+returnAddress = [PTBR + 2 * ((userSP-1)/512)] * 512 + ((userSP-1)%512);
+[processTable + 13] = userSP;
+SP = [processTable + 11] * 512 - 1;
+
+sysCallNumber = [[PTBR + 2 * ((userSP-5)/512)] * 512 + ((userSP-5)%512)];
+[processTable + 9] = sysCallNumber;
+
+if (sysCallNumber == INT_NEWUSR) then
+    call NewUsr;
+endif;
+
+if (sysCallNumber == INT_REMUSR) then
+    call RemUsr;
+endif;
+
+if (sysCallNumber == INT_SETPWD) then
+    call SetPwd;
+endif;
+
+if (sysCallNumber == INT_GETUNAME) then
+    call GetUname;
+endif;
+
+if (sysCallNumber == INT_GETUID) then
+    call GetUid;
+endif;
+
+[processTable + 9] = 0;
+SP = [processTable + 13];
+ireturn;
+
+
+NewUsr:
+    // Registers in use: R4, R5, R6
+    alias username R4;
+    alias password R5;
+    username = [[PTBR + 2 * ((userSP-4)/512)] * 512 + ((userSP-4)%512)];
+    password = [[PTBR + 2 * ((userSP-3)/512)] * 512 + ((userSP-3)%512)];
+
+    // If not root or not shell
+    if ([SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS || [SYSTEM_STATUS_TABLE] != ROOT) then
+        [returnAddress] = -2;
+        return;
+    endif;
+
+    // Check if username present
+    alias userID R6;
+    userID = 0;
+    while (userID < MAX_USER_NUM && [USER_TABLE + (userID * 2)] != username) do
+        userID = userID + 1;
+    endwhile;
+    if (userID != MAX_USER_NUM) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    // Find free entry in User Table
+    userID = 0;
+    while (userID < MAX_USER_NUM && [USER_TABLE + (userID * 2)] != -1) do
+        userID = userID + 1;
+    endwhile;
+    if (userID == MAX_USER_NUM) then
+        [returnAddress] = -3;
+        return;
+    endif;
+
+    // Encrypt and set fields in User Table
+    encrypt password; // R5 now contains encrypted password
+    [USER_TABLE + (userID * 2)] = username;
+    [USER_TABLE + (userID * 2) + 1] = password;
+
+    [returnAddress] = 0;
+    return;
+
+    // ---Reclaiming alias names---
+    alias R_4 R4;
+    alias R_5 R5;
+    alias R_6 R6;
+    // ----------------------------
+
+RemUsr:
+    // Registers in use: R4, R5, R6
+    alias username R4;
+    username = [[PTBR + 2 * ((userSP-4)/512)] * 512 + ((userSP-4)%512)];
+
+    // If not root or not shell
+    if ([SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS || [SYSTEM_STATUS_TABLE] != ROOT) then
+        [returnAddress] = -2;
+        return;
+    endif;
+
+    // If user "root" or "kernel"
+    if (username == "kernel" || username == "root") then
+        [returnAddress] = -2;
+        return;
+    endif;
+
+    // Find entry in User Table
+    alias userID R5;
+    userID = 0;
+    while (userID < MAX_USER_NUM && [USER_TABLE + (userID * 2)] != username) do
+        userID = userID + 1;
+    endwhile;
+    if (userID == MAX_USER_NUM) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    // Loop through root file
+    alias fileIndex R6;
+    fileIndex = 0;
+    while (fileIndex < MAX_FILE_NUM && [ROOT_FILE + (fileIndex * 8) + 3] != username) do
+        fileIndex = fileIndex + 1;
+    endwhile;
+    if (fileIndex != MAX_FILE_NUM) then
+        [returnAddress] = -3;
+        return;
+    endif;
+
+    // Invalidate USERNAME and ENCRYPTED PASSWORD fields
+    [USER_TABLE + (userID * 2)] = -1;
+    [USER_TABLE + (userID * 2) + 1] = -1;
+
+    [returnAddress] = 0;
+    return;
+
+    // ---Reclaiming alias names---
+    alias R_4 R4;
+    alias R_5 R5;
+    alias R_6 R6;
+    // ----------------------------
+
+
+SetPwd:
+    // Registers in use: R4, R5, R6
+    alias username R4;
+    alias password R5;
+    username = [[PTBR + 2 * ((userSP-4)/512)] * 512 + ((userSP-4)%512)];
+    password = [[PTBR + 2 * ((userSP-3)/512)] * 512 + ((userSP-3)%512)];
+
+    // If not shell
+    if ([SYSTEM_STATUS_TABLE + 1] != SHELL_PROCESS) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    // Find entry in User Table
+    alias userID R6;
+    userID = 0;
+    while (userID < MAX_USER_NUM && [USER_TABLE + (userID * 2)] != username) do
+        userID = userID + 1;
+    endwhile;
+    if (userID == MAX_USER_NUM) then
+        [returnAddress] = -2;
+        return;
+    endif;
+
+    // USERID of process not equal userID and current user not ROOT
+    if ([processTable + 3] != userID && [SYSTEM_STATUS_TABLE] != ROOT) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    // Encrypt and set ENCRYPTED PASSWORD field
+    encrypt password; // R5 contains the encrypted password
+    [USER_TABLE + (userID * 2) + 1] = password;
+
+    [returnAddress] = 0;
+    return;
+    
+    // ---Reclaiming alias names---
+    alias R_4 R4;
+    alias R_5 R5;
+    alias R_6 R6;
+    // ----------------------------
+
+GetUname:
+    // Registers in use: R4
+    alias userID R4;
+    userID = [[PTBR + 2 * ((userSP-4)/512)] * 512 + ((userSP-4)%512)];
+
+    if (userID < 0 || userID > 15) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    // If USERNAME invalid
+    if ([USER_TABLE + (userID * 2)] == -1) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    //Return username
+    [returnAddress] = [USER_TABLE + (userID * 2)];
+    return;
+
+    // ---Reclaiming alias names---
+    alias R_4 R4;
+    // ----------------------------
+
+GetUid:
+    // Registers in use: R4, R5
+    alias username R4;
+    username = [[PTBR + 2 * ((userSP-4)/512)] * 512 + ((userSP-4)%512)];
+
+    alias userID R5;
+    userID = 0;
+    while (userID < MAX_USER_NUM) do
+        if ([USER_TABLE + (userID * 2)] == username) then
+            [returnAddress] = userID;
+            return;
+        endif;
+        userID = userID + 1;
+    endwhile;
+
+    [returnAddress] = -1;
+    return;

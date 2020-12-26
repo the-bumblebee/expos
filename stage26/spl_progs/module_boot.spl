@@ -1,0 +1,362 @@
+// MODULE 7 - BOOT MODULE
+
+// Loads library code from disk blocks 13 and 14 to physical pages 63 and 64
+loadi(63,13);
+loadi(64,14);
+
+// Loads INIT program from 7 block to 65 physical page, 66 used as stack
+loadi(65,7);
+
+// Loads interrupt routine 10 from 35, 36 blocks to 22, 23 physical pages
+loadi(22,35);
+loadi(23,36);
+// Loads exception handler from 15, 16 blocks to 2, 3 physical pages
+loadi(2, 15);
+loadi(3, 16);
+
+// Loads timer interrupt routine from 17, 18 blocks to 4, 5 physical pages
+loadi(4, 17);
+loadi(5, 18);
+
+// Loads Interrupt 7 Routine (Write) from 29, 30 blocks to 16, 17 physical pages
+loadi(16,29);
+loadi(17,30);
+
+// Loads scheduler (Module 5) from 63, 64 to 50, 51
+loadi(50,63);
+loadi(51,64);
+
+// Loads Resource Manager Module (Module 4) from disk blocks 53, 54 to pages 40, 41
+loadi(40,53);
+loadi(41,54);
+
+// Loads Device Manager Module (Module 0) from disk blocks 61, 62 to pages 48, 49
+loadi(48,61);
+loadi(49,62);
+
+// Loads the Console Interrupt Handler from disk blocks 21, 22 to pages 8, 9
+loadi(8, 21);
+loadi(9, 22);
+
+// Loads the Interrupt 6 Routine (Read) from disk blocks 27, 28 to pages 14, 15
+loadi(14, 27);
+loadi(15, 28);
+
+// Initializing STATUS field in Terminal Status Table as 0
+[TERMINAL_STATUS_TABLE] = 0;
+
+
+// -----------------Stage 17-------------------
+// Loads the Exec System Call (Interrupt 9) from blocks 33, 34 to pages 20, 21
+loadi(20, 33);
+loadi(21, 34);
+
+// Loads Process Manager Module (Module 1) from blocks 55, 56 to pages 42, 43
+loadi(42, 55);
+loadi(43, 56);
+
+// Loads Memory Manager Module (Module 2) from blocks 57, 58 to pages 44, 45
+loadi(44, 57);
+loadi(45, 58);
+
+// Loading inode table
+loadi(59, 3);
+loadi(60, 4);
+
+// Modified in stage 26
+// // Initializing the Memory Free List
+// alias page R0;
+// page = 0;
+// while (page <= 82) do
+//     [MEMORY_FREE_LIST + page] = 1;
+//     page = page + 1;
+// endwhile;
+// while (page < 128) do
+//     [MEMORY_FREE_LIST + page] = 0;
+//     page = page + 1;
+// endwhile;
+
+// Setting WAIT_MEM_COUNT and MEM_FREE_COUNT field in the System Status Table
+[SYSTEM_STATUS_TABLE + 3] = 0;
+// [SYSTEM_STATUS_TABLE + 2] = NUM_MEM_PAGES - 83; // Modified in stage 26
+// --------------------------------------------
+
+
+// -----------------Stage 18-------------------
+// Loads Disk Interrupt Handler from blocks 19, 20 to pages 6, 7
+loadi(6, 19);
+loadi(7, 20);
+
+// Initializing STATUS field in Disk Status Table as 0
+[DISK_STATUS_TABLE] = 0;
+
+// Initializing the Pre-Process Table for init, UAPage: 77
+alias perProcessEntry R0;
+perProcessEntry = 0;
+while (perProcessEntry < 8) do
+    [77 * 512 + RESOURCE_TABLE_OFFSET + (2 * perProcessEntry)] = -1;
+    perProcessEntry = perProcessEntry + 1;
+endwhile;
+// --------------------------------------------
+
+
+// -----------------Stage 19-------------------
+// Not needed as of stage 26
+// // Initialize Disk Map Table of init
+// alias diskMapEntry R0;
+// diskMapEntry = DISK_MAP_TABLE + (1 * 10);
+// alias i R1;
+// i = 0;
+// while (i < 10) do
+//     [diskMapEntry + i] = -1;
+//     i = i + 1;
+// endwhile;
+
+// Load Disk Free List from block 2 to page 61
+loadi(61, 2);
+// --------------------------------------------
+
+
+// -----------------Stage 20-------------------
+// Fork- 31,32 to 18, 19
+loadi(18, 31);
+loadi(19, 32);
+// --------------------------------------------
+
+
+// -----------------Stage 21-------------------
+// Int 11 - 37, 38 to 24, 25
+loadi(24, 37);
+loadi(25, 38);
+
+// Int 15 (Shutdown) - 45, 46 to 32, 33
+loadi(32, 45);
+loadi(33, 46);
+// --------------------------------------------
+
+
+// -----------------Stage 22-------------------
+// Initializing Semaphore Table
+alias semTableIndex R0;
+semTableIndex = 0;
+while(semTableIndex < 32) do
+    [SEMAPHORE_TABLE + 4 * semTableIndex] = -1;
+    [SEMAPHORE_TABLE + 4 * semTableIndex + 1] = 0;
+    semTableIndex = semTableIndex + 1;
+endwhile;
+
+// Interrupt 13 - 41, 42 to 28, 29
+loadi(28, 41);
+loadi(29, 42);
+
+// Interrupt 14 - 43, 44 to 30, 31
+loadi(30, 43);
+loadi(31, 44);
+// --------------------------------------------
+
+
+// -----------------Stage 23-------------------
+// Interrupt 4 - 23, 24 to 10, 11
+loadi(10, 23);
+loadi(11, 24);
+
+// Root file - 5 to 62
+loadi(62, 5);
+
+// Initialize File Status Table
+alias fileStatusTableIndex R0;
+fileStatusTableIndex = 0;
+while (fileStatusTableIndex < MAX_FILE_NUM) do
+    [FILE_STATUS_TABLE + (fileStatusTableIndex * 2)] = -1;
+    [FILE_STATUS_TABLE + (fileStatusTableIndex * 2) + 1] = -1;
+    fileStatusTableIndex  = fileStatusTableIndex + 1;
+endwhile;
+
+// Initialize Buffer Table
+alias bufferIndex R0;
+bufferIndex = 0;
+while (bufferIndex < MAX_BUFFER) do
+    [BUFFER_TABLE + (bufferIndex * 4)] = -1;
+    [BUFFER_TABLE + (bufferIndex * 4) + 1] = 0;
+    [BUFFER_TABLE + (bufferIndex * 4) + 2] = -1;
+    bufferIndex = bufferIndex + 1;
+endwhile;
+// --------------------------------------------
+
+
+// -----------------Stage 24-------------------
+// Interrupt 5 - 25, 26 to 12, 13
+loadi(12, 25);
+loadi(13, 26);
+
+// Module 3 (File Manager) - 59, 60 to 46, 47
+loadi(46, 59);
+loadi(47, 60);
+
+// Initialize entries of Open File Table - INODE INDEX as -1 and OPEN INSTANCE COUNT as 0
+alias openFileIndex R0;
+openFileIndex = 0;
+while (openFileIndex < MAX_OPENFILE_NUM) do
+    [OPEN_FILE_TABLE + (openFileIndex * 4)] = -1;
+    [OPEN_FILE_TABLE + (openFileIndex * 4) + 1] = 0;
+    openFileIndex = openFileIndex + 1;
+endwhile;
+// --------------------------------------------
+
+// -----------------Stage 26-------------------
+// Load shell program - 9, 10 to 67, 68
+loadi(67, 9);
+loadi(68, 10);
+
+// Load int 16 - 47, 48 to 34, 35
+loadi(34, 47);
+loadi(35, 48);
+
+// Load int 12 - 39, 40 to 26, 27
+loadi(26, 39);
+loadi(27, 40);
+
+// Load int 17 - 49, 50 to 36, 37
+loadi(36, 49);
+loadi(37, 50);
+
+// Setting Page Table entry for init program
+// Code: 65     Heap: -    Stack: 66, -   UArea page: 77 // 2nd code page used as stack
+PTBR = PAGE_TABLE_BASE + 20;
+PTLR = 10;
+//Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+//Heap
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+//Code
+[PTBR+8] = 65;
+[PTBR+9] = "0100";
+[PTBR+10] = -1;
+[PTBR+11] = "0000";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+//Stack
+[PTBR+16] = 66;
+[PTBR+17] = "0110";
+[PTBR+18] = -1;
+[PTBR+19] = "0000";
+
+//Process table for init
+// PID = 1, USERID = ROOT, STATE = CREATED, UAPage = 77, KPTR = 0, UPTR = 8*512, PTBR, PTLR
+alias initProcessTable R0;
+initProcessTable = PROCESS_TABLE + (16 * 1);
+[initProcessTable + 1] = 1;
+[initProcessTable + 3] = KERNEL;
+[initProcessTable + 4] = CREATED;
+[initProcessTable + 11] = 77;
+[initProcessTable + 12] = 0;
+[initProcessTable + 13] = 8 * 512;
+[initProcessTable + 14] = PTBR;
+[initProcessTable + 15] = PTLR;
+
+//Setting entry point for init
+[66*512] = [65*512 + 1];
+
+// Setting Page Table entry for shell
+// Code: 67, 68     Heap: -    Stack: 78, 79    UArea page: 80
+PTBR = PAGE_TABLE_BASE + 20 * 2;
+PTLR = 10;
+//Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+//Heap
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+//Code
+[PTBR+8] = 67;
+[PTBR+9] = "0100";
+[PTBR+10] = 68;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+//Stack
+[PTBR+16] = 78;
+[PTBR+17] = "0110";
+[PTBR+18] = 79;
+[PTBR+19] = "0110";
+
+//Process table for shell
+// PID = 2, PPID = 1, STATE = TERMINATED, UAPage = 80, KPTR = 0, UPTR = 8*512, PTBR, PTLR
+alias shellProcessTable R0;
+shellProcessTable = PROCESS_TABLE + (16 * 2);
+[shellProcessTable + 1] = 2;
+[shellProcessTable + 2] = 1;
+[shellProcessTable + 3] = KERNEL;
+[shellProcessTable + 4] = TERMINATED;
+[shellProcessTable + 11] = 80;
+[shellProcessTable + 12] = 0;
+[shellProcessTable + 13] = 8 * 512;
+[shellProcessTable + 14] = PTBR;
+[shellProcessTable + 15] = PTLR;
+
+//Setting entry point for shell
+[78 * 512] = [67 * 512 + 1];
+
+// Initialize Disk Map Table of shell
+alias diskMapEntry R0;
+diskMapEntry = DISK_MAP_TABLE + (2 * 10);
+alias i R1;
+i = 0;
+while (i < 10) do
+    [diskMapEntry + i] = -1;
+    i = i + 1;
+endwhile;
+[diskMapEntry + 4] = 9;
+[diskMapEntry + 5] = 10;
+
+// Initializing the Pre-Process Table for shell, UAPage: 80
+alias perProcessEntry R0;
+perProcessEntry = 0;
+while (perProcessEntry < 8) do
+    [80 * 512 + RESOURCE_TABLE_OFFSET + (2 * perProcessEntry)] = -1;
+    perProcessEntry = perProcessEntry + 1;
+endwhile;
+
+// Initializing the Memory Free List
+alias page R0;
+page = 0;
+while (page <= 80) do
+    [MEMORY_FREE_LIST + page] = 1;
+    page = page + 1;
+endwhile;
+while (page < 128) do
+    [MEMORY_FREE_LIST + page] = 0;
+    page = page + 1;
+endwhile;
+
+// Setting MEM_FREE_COUNT in System Status Table
+[SYSTEM_STATUS_TABLE + 2] = 47;
+[SYSTEM_STATUS_TABLE] = KERNEL;
+[SYSTEM_STATUS_TABLE + 1] = IDLE_PROCESS;
+
+// --------------------------------------------
+
+// Setting the STATE field of the rest of
+// Process Table entries to TERMINATED
+alias index R0;
+index = 3;
+while (index < MAX_PROC_NUM) do
+    [PROCESS_TABLE + (16 * index) + 4] = TERMINATED;
+    index = index + 1;
+endwhile;
+
+return;

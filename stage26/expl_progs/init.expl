@@ -1,0 +1,27 @@
+int main()
+{
+decl
+    int temp, retval;
+    str username, password;
+enddecl
+
+begin
+    while (1 == 1) do
+        temp = exposcall ("Write", -2, " ");
+        temp = exposcall ("Write", -2, "---Login---");
+        temp = exposcall ("Write", -2, "Username>");
+        temp = exposcall ("Read", -1, username);
+        temp = exposcall ("Write", -2, "Password>");
+        temp = exposcall ("Read", -1, password);
+        retval = exposcall ("Login", username, password);
+        if (retval == -1) then
+            temp = exposcall ("Write", -2, "INVALID CREDS");
+        else
+            if (retval == -2) then
+                temp = exposcall ("Write", -2, "PERM DENIED");
+            endif;
+        endif;
+    endwhile;
+    return 0;
+end
+}

@@ -1,0 +1,148 @@
+// INTERRUPT 7 - WRITE SYSTEM CALL
+
+alias userSP R0;
+alias processTable R1;
+userSP = SP;
+processTable = PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1] * 16;
+[processTable + 9] = INT_WRITE;
+[processTable + 13] = userSP;
+SP = [processTable + 11] * 512 - 1;
+
+alias fileDescriptor R2;
+alias returnAddress R3;
+fileDescriptor = [[PTBR + 2 * ((userSP-4)/512)] * 512 + (userSP-4)%512];
+returnAddress = [PTBR + 2 * ((userSP-1)/512)] * 512 + (userSP -1)%512;
+
+// File descriptor -2 for terminal
+if (fileDescriptor == -2) then
+    call WriteTerminal;
+endif;
+
+// File descriptor in [0, 7], else return -1
+if (fileDescriptor >= 0 && fileDescriptor <= 7) then
+    call WriteFile;
+else
+    [returnAddress] = -1;
+endif;
+
+SP = userSP;
+[processTable + 9] = 0;
+ireturn;
+
+alias word R4; // Used by WriteTerminal
+WriteTerminal:
+    // Prints the second argument (userSP - 3) to terminal
+    word = [[PTBR + 2 * ((userSP - 3) / 512)] * 512 + ((userSP - 3) % 512)];
+    
+    multipush(R0, R1, R2, R3, R4);
+    R1 = TERMINAL_WRITE;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = word;
+    call DEVICE_MANAGER;
+    multipop(R0, R1, R2, R3, R4);
+
+    // Return value indicating success
+    [returnAddress] = 0;
+    return;
+
+WriteFile:
+    word = [[PTBR + 2 * ((userSP - 3) / 512)] * 512 + ((userSP - 3) % 512)];
+    
+    alias resourceTable R5;
+    resourceTable = [processTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+
+    if ([resourceTable + (fileDescriptor * 2)] != FILE) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    alias openFileEntry R6;
+    alias inodeIndex R7;
+    alias inodeEntry R8;
+    // Open File index = [resourceTable + (fileDescriptor * 2) + 1]
+    openFileEntry = OPEN_FILE_TABLE + [resourceTable + (fileDescriptor * 2) + 1] * 4;
+    inodeIndex = [openFileEntry];
+    inodeEntry = INODE_TABLE + (inodeIndex * 16);
+
+    // Current user not root AND doesn't own file AND exclusive permission
+    if ([processTable + 3] != ROOT && [processTable + 3] != [inodeEntry + 3] && [inodeEntry + 4] == EXCLUSIVE) then
+        [returnAddress] = -3;
+        return;
+    endif;
+
+    alias retVal R9;
+    multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8);
+    R1 = ACQUIRE_INODE;
+    R2 = inodeIndex; // R7
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    retVal = R0;
+    multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8);
+
+    if (retVal == -1) then
+        [returnAddress] = -1;
+        return;
+    endif;
+
+    alias lSeek R9;
+    lSeek = [openFileEntry + 2];
+
+    if (lSeek == MAX_FILE_SIZE) then
+        multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+        R1 = RELEASE_INODE;
+        R2 = inodeIndex; //R7
+        R3 = [SYSTEM_STATUS_TABLE + 1];
+        call RESOURCE_MANAGER;
+        multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+        [returnAddress] = -2;
+        return;
+    endif;
+
+    // LSEEK multiple of 512 and same as File Size, new block to be allocated
+    if (lSeek % 512 == 0 && lSeek == [inodeEntry + 2]) then
+        multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+        R1 = GET_FREE_BLOCK;
+        call MEMORY_MANAGER;
+        alias freeBlock R10;
+        freeBlock = R0;
+        multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9);
+
+        if (freeBlock == -1) then
+            [returnAddress] = -2;
+            return;
+        endif;
+        
+        [inodeEntry + 8 + (lSeek / 512)] = freeBlock;
+    endif;
+
+    alias diskBlockNumber R10;
+    alias offset R11;
+    // Block Index = lSeek / 512
+    diskBlockNumber = [inodeEntry + 8 + (lSeek / 512)];
+    offset = lSeek % 512;
+
+    multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11);
+    R1 = BUFFERED_WRITE;
+    R2 = diskBlockNumber; // R9
+    R3 = offset; // R10
+    R4 = word; // R4
+    call FILE_MANAGER;
+    multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11);
+
+    // Increment size in Inode Table and Root File, if LSEEK == File Size
+    if (lSeek == [inodeEntry + 2]) then
+        [inodeEntry + 2] = [inodeEntry + 2] + 1;
+        [ROOT_FILE + (inodeIndex * 8) + 1] = [ROOT_FILE + (inodeIndex * 8) + 1] + 1;
+    endif;
+
+    // Increment LSEEK in Open File Table
+    [openFileEntry + 2] = lSeek + 1;
+
+    multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11);
+    R1 = RELEASE_INODE;
+    R2 = inodeIndex; //R7
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11);
+    [returnAddress] = 0;
+	return;

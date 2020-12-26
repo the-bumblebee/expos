@@ -1,0 +1,242 @@
+// MODULE 3 - FILE MANAGER
+
+alias funcNum R1;
+alias returnValue R0;
+
+alias arg1 R2;
+    alias arg2 R3;
+    alias arg3 R4;
+
+if (funcNum == OPEN) then
+    call Open;
+endif;
+
+if (funcNum == CLOSE) then
+    call Close;
+endif;
+
+if (funcNum == BUFFERED_READ) then
+    call BufferedRead;
+endif;
+
+if (funcNum == BUFFERED_WRITE) then
+    call BufferedWrite;
+endif;
+
+return;
+
+alias inodeIndex R3;
+alias openFileEntry R5;
+alias fileStatusEntry R6;
+// Args: filename
+Open:
+    alias fileName R2;
+
+    // Find inode entry
+    inodeIndex = 0;
+    while([INODE_TABLE + (inodeIndex * 16) + 1] != fileName && inodeIndex < MAX_FILE_NUM) do
+        inodeIndex = inodeIndex + 1;
+    endwhile;
+
+    // If no entry, return -1
+    if (inodeIndex == MAX_FILE_NUM) then
+        returnValue = -1;
+        return;
+    endif;
+
+    // Acquire inode
+    multipush (R2, R3);
+    R1 = ACQUIRE_INODE;
+    R2 = inodeIndex; // R3
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R2, R3); // R0 untouched
+
+    // If acquire failed, return -1
+    if (R0 == -1) then
+        returnValue = -1;
+        return;
+    endif;
+
+    // If file EXEC, release and return -1
+    if ([INODE_TABLE + (16 * inodeIndex)] == EXEC) then
+        R1 = RELEASE_INODE;
+        R2 = inodeIndex; // R3
+        R3 = [SYSTEM_STATUS_TABLE + 1];
+        call RESOURCE_MANAGER;
+        returnValue = -1;
+        return;
+    endif;
+
+    // Find free entry in Open File Table
+    alias freeOpenTableIndex R4;
+    freeOpenTableIndex = 0;
+    while([OPEN_FILE_TABLE + (freeOpenTableIndex * 4)] != -1 && freeOpenTableIndex < MAX_OPENFILE_NUM) do
+        freeOpenTableIndex = freeOpenTableIndex + 1;
+    endwhile;
+
+    // If no free entry, release and return -2
+    if (freeOpenTableIndex == MAX_OPENFILE_NUM) then
+        returnValue = -2;
+        return;
+    endif;
+
+    // To decrease number of instructions
+    openFileEntry = OPEN_FILE_TABLE + (freeOpenTableIndex * 4);
+    fileStatusEntry = FILE_STATUS_TABLE + (inodeIndex * 4);
+
+    // If file "root", set INODE INDEX to INODE_ROOT
+    if (fileName == "root") then
+        [openFileEntry] = INODE_ROOT;
+    // Else in File Status Table, if File Open Count -1, set it to 1, else increment
+    // Set INODE INDEX
+    else
+        if ([fileStatusEntry + 1] == -1) then
+            [fileStatusEntry + 1] = 1;
+        else
+            [fileStatusEntry + 1] = [fileStatusEntry + 1] + 1;
+        endif;
+    endif;
+
+    // OPEN INSTANCE COUNT = 1, LSEEK = 0 in Open File Table
+    [openFileEntry] = inodeIndex;
+    [openFileEntry + 1] = 1;
+    [openFileEntry + 2] = 0;
+
+    // Release inode
+    multipush (R2, R3, R4); // R5, R6 not used
+    R1 = RELEASE_INODE;
+    R2 = inodeIndex; // R3
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R2, R3, R4);
+
+    // Return Open File Table index
+    returnValue = freeOpenTableIndex;
+    return;
+
+// Args: Open File Table index
+Close:
+    alias openFileTableIndex R2;
+
+    openFileEntry = OPEN_FILE_TABLE + (openFileTableIndex * 4);
+    inodeIndex = [openFileEntry];
+    fileStatusEntry = FILE_STATUS_TABLE + (inodeIndex * 4);
+
+    // Decrement OPEN INSTANCE COUNT in Open File Table entry
+    [openFileEntry + 1] = [openFileEntry + 1] - 1;
+
+    // If OPEN INSTANCE COUNT becomes 0:
+    //      Set all fields to -1
+    //      If not root, decrement FILE OPEN COUNT in File Status Table
+    //      If FILE OPEN COUNT becomes 0, set it to -1
+    if ([openFileEntry + 1] == 0) then
+        [openFileEntry] = -1;
+        [openFileEntry + 1] = -1;
+        [openFileEntry + 2] = -1;
+        if (inodeIndex != INODE_ROOT) then
+            [fileStatusEntry + 1] = [fileStatusEntry + 1] - 1;
+            if ([fileStatusEntry + 1] == 0) then
+                [fileStatusEntry + 1] = -1;
+            endif;
+        endif;
+    endif;
+	return;
+
+alias diskBlockNumber R2;
+alias offset R3;
+alias bufferNumber R5;
+BufferedRead:
+    alias memoryAddress R4;
+    bufferNumber = diskBlockNumber % 4;
+
+    multipush (R1, R2, R3, R4, R5);
+    R1 = ACQUIRE_BUFFER;
+    R2 = bufferNumber; // R5
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R1, R2, R3, R4, R5);
+
+    if (diskBlockNumber != [BUFFER_TABLE + (bufferNumber * 4)]) then
+        if ([BUFFER_TABLE + (bufferNumber * 4) + 1] == 1) then
+			multipush (R1, R2, R3, R4, R5);
+			// R4 = R2;
+            R1 = DISK_STORE;
+            R2 = [SYSTEM_STATUS_TABLE + 1];
+            R3 = BUFFER_BASE + bufferNumber; // R5
+            R4 = [BUFFER_TABLE + (bufferNumber * 4)]; // R5
+            call DEVICE_MANAGER;
+            multipop (R1, R2, R3, R4, R5);
+
+            [BUFFER_TABLE + (bufferNumber * 4) + 1] = 0;
+        endif;
+
+        multipush (R1, R2, R3, R4, R5);
+        R4 = diskBlockNumber; // R2
+        R1 = DISK_LOAD;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R3 = BUFFER_BASE + bufferNumber; // R5
+        call DEVICE_MANAGER;
+        multipop (R1, R2, R3, R4, R5);
+        
+        [BUFFER_TABLE + (bufferNumber * 4)] = diskBlockNumber;
+    endif;
+
+    [memoryAddress] = [(BUFFER_BASE + bufferNumber) * 512 + offset];
+
+    // multipush (R1, R2, R3, R4, R5);
+    R1 = RELEASE_BUFFER;
+    R2 = bufferNumber; // R5
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    // multipop (R1, R2, R3, R4, R5);
+    return;
+
+BufferedWrite:
+    alias word R4;
+    bufferNumber = diskBlockNumber % 4;
+
+    multipush (R1, R2, R3, R4, R5);
+    R1 = ACQUIRE_BUFFER;
+    R2 = bufferNumber; // R5
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    multipop (R1, R2, R3, R4, R5);
+
+    if (diskBlockNumber != [BUFFER_TABLE + (bufferNumber * 4)]) then
+        if ([BUFFER_TABLE + (bufferNumber * 4) + 1] == 1) then
+			multipush (R1, R2, R3, R4, R5);
+			// R4 = R2;
+            R1 = DISK_STORE;
+            R2 = [SYSTEM_STATUS_TABLE + 1];
+            R3 = BUFFER_BASE + bufferNumber; // R5
+            R4 = [BUFFER_TABLE + (bufferNumber * 4)]; // R5
+            call DEVICE_MANAGER;
+            multipop (R1, R2, R3, R4, R5);
+
+            [BUFFER_TABLE + (bufferNumber * 4) + 1] = 0;
+        endif;
+
+        multipush (R1, R2, R3, R4, R5);
+        R4 = diskBlockNumber; // R2
+        R1 = DISK_LOAD;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R3 = BUFFER_BASE + bufferNumber; // R5
+        call DEVICE_MANAGER;
+        multipop (R1, R2, R3, R4, R5);
+        
+        [BUFFER_TABLE + (bufferNumber * 4)] = diskBlockNumber;
+    endif;
+
+    // Writing word to offset location in the buffer
+    [(BUFFER_BASE + bufferNumber) * 512 + offset] = word;
+    // Set DIRTY bit
+    [BUFFER_TABLE + (bufferNumber * 4) + 1] = 1;
+
+    // multipush (R1, R2, R3, R4, R5);
+    R1 = RELEASE_BUFFER;
+    R2 = bufferNumber; // R5
+    R3 = [SYSTEM_STATUS_TABLE + 1];
+    call RESOURCE_MANAGER;
+    // multipop (R1, R2, R3, R4, R5);
+    return;
