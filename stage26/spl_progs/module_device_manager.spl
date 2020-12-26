@@ -110,6 +110,5 @@ DiskStore:
     // Set STATE of process as WAIT_DISK
     [PROCESS_TABLE + (currentPID * 16) + 4] = WAIT_DISK;
     // Invoke the Scheduler
-    breakpoint;
     call SCHEDULER;
     return;

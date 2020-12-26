@@ -163,12 +163,14 @@ DeleteSysCall:
     endwhile;
 
     // Invalidate Inode Table Entry
+    breakpoint;
     alias i R9;
     i = 0;
     while (i < 16) do
         [inodeTableEntry + i] = -1;
         i = i + 1;
     endwhile;
+    breakpoint;
 
     // Invalidate Root File Entry
     [ROOT_FILE + (inodeIndex * 8)] = -1;
