@@ -163,20 +163,25 @@ DeleteSysCall:
     endwhile;
 
     // Invalidate Inode Table Entry
-    breakpoint;
     alias i R9;
     i = 0;
     while (i < 16) do
         [inodeTableEntry + i] = -1;
         i = i + 1;
     endwhile;
-    breakpoint;
-
-    // Invalidate Root File Entry
-    [ROOT_FILE + (inodeIndex * 8)] = -1;
-
     // Setting SIZE of Inode Table Entry to 0
     [inodeTableEntry + 2] = 0;
+
+    // Invalidate Root File Entry
+    alias rootFileEntry R8;
+    rootFileEntry = ROOT_FILE + (inodeIndex * 8);
+    i = 0;
+    while (i < 5) do
+        [rootFileEntry + i] = -1;
+        i = i + 1;
+    endwhile;
+    // Setting SIZE in Root File to 0
+    [rootFileEntry + 1] = 0;
 
     multipush (R0, R1, R2, R3, R4, R5, R6, R7, R8);
     R1 = RELEASE_INODE;
