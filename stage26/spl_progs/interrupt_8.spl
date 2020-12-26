@@ -1,352 +1,150 @@
-// // INERRUPT 8 - FORK SYSTEM CALL
+// INERRUPT 8 - FORK SYSTEM CALL
 
-// alias userSP R0;
-// alias currentPID R1;
-// alias currentProcessTable R2;
+alias userSP R0;
+alias currentPID R1;
+alias currentProcessTable R2;
 
 
-// // MODE and Kernel stack
-// userSP = SP;
-// currentPID = [SYSTEM_STATUS_TABLE + 1];
-// currentProcessTable = PROCESS_TABLE + (currentPID * 16);
-// [currentProcessTable + 13] = SP;
-// SP = [currentProcessTable + 11] * 512 - 1;
-// [currentProcessTable + 9] = INT_FORK;
-
-// alias newPID R3;
-// alias newProcessTable R4;
-// multipush (R0, R1, R2);
-// R1 = GET_PCB_ENTRY;
-// call PROCESS_MANAGER;
-// newPID = R0;
-// newProcessTable = PROCESS_TABLE + (newPID * 16);
-// multipop (R0, R1, R2);
-
-// alias returnAddress R5;
-// returnAddress = [PTBR + 2 * ((userSP - 1)/512)] * 512 + (userSP - 1) % 512;
-
-// if (newPID == -1) then
-//     [returnAddress] = -1;
-//     [currentProcessTable + 9] = 0;
-//     SP = [currentProcessTable + 13];
-//     ireturn;
-// endif;
-
-// // Load heap of parent
-// if ([PTBR + (2 * 2) + 1] == "0000") then
-//     multipush (R0, R1, R2, R3, R4, R5);
-
-//     R1 = GET_FREE_PAGE;
-//     call MEMORY_MANAGER;
-
-//     [PTBR + 4] = R0;
-//     [PTBR + 5] = "1110";
-
-//     R1 = GET_FREE_PAGE;
-//     call MEMORY_MANAGER;
-
-//     [PTBR + 6] = R0;
-//     [PTBR + 7] = "1110";
-
-//     multipop(R0, R1, R2, R3, R4, R5);
-// endif;
-
-// [newProcessTable + 3] = [currentProcessTable + 3];
-// [newProcessTable + 6] = [currentProcessTable + 6];
-// [newProcessTable + 10] = [currentProcessTable + 10];
-// [newProcessTable + 7] = [currentProcessTable + 7]; // INODE inedx if process from shell
-// [newProcessTable + 13] = [currentProcessTable + 13];
-
-// [newProcessTable + 9] = 0;
-// [newProcessTable + 12] = 0;
-// [newProcessTable] = 0;
-// [newProcessTable + 2] = currentPID;
-// [newProcessTable + 4] = CREATED;
-
-// // UAPage
-// multipush (R0, R1, R2, R3, R4, R5);
-// R1 = GET_FREE_PAGE;
-// call MEMORY_MANAGER;
-// [newProcessTable + 11] = R0;
-// multipop (R0, R1, R2, R3, R4, R5);
-
-// // Per process table
-// alias index R6;
-// alias childResourceTable R7;
-// alias parentResourceTable R8;
-// index = 0;
-// childResourceTable = [newProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
-// parentResourceTable = [currentProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
-// while (index < 8) do
-//     [childResourceTable + 2 * index] = [parentResourceTable + 2 * index];
-//     [childResourceTable + 2 * index + 1] = [parentResourceTable + 2 * index + 1];
-//     // If semaphore increment PROCESS COUNT in Semaphore Table
-//     if ([childResourceTable + 2 * index] == SEMAPHORE) then
-//         [SEMAPHORE_TABLE + 4 * [childResourceTable + 2 * index + 1] + 1] = [SEMAPHORE_TABLE + 4 * [childResourceTable + 2 * index + 1] + 1] + 1;
-//     else
-//     // If file, increment OPEN INSTANCE COUNT in Open File Table entry
-//         if ([childResourceTable + 2 * index] == FILE) then
-//             [OPEN_FILE_TABLE + 4 * [childResourceTable + 2 * index + 1] + 1] = [OPEN_FILE_TABLE + 4 * [childResourceTable + 2 * index + 1] + 1] + 1;
-//         endif;
-//     endif;
-//     index = index + 1;
-// endwhile;
-
-// // Disk map table, rest have to be made invalid
-// index = 2;
-// while (index < 10) do
-//     [DISK_MAP_TABLE + (newPID * 10) + index] = [DISK_MAP_TABLE + (currentPID * 10) + index];
-//     index = index + 1;
-// endwhile;
-
-// // Page table
-// alias newPageTable R7;
-// newPageTable = PAGE_TABLE_BASE + (newPID * 20);
-// [newPageTable] = 63;
-// [newPageTable + 1] = "0100";
-// [newPageTable + 2] = 64;
-// [newPageTable + 3] = "0100";
-
-// index = 2;
-// while (index < 8) do
-//     [newPageTable + (2 *index)] = [PTBR + (2 * index)];
-//     [MEMORY_FREE_LIST + [PTBR + (2 * index)]] = [MEMORY_FREE_LIST + [PTBR + (2 * index)]] + 1;
-//     [newPageTable + (2 *index) + 1] = [PTBR + (2 * index) + 1];
-//     index = index + 1;
-// endwhile;
-
-// multipush (R0, R1, R2, R3, R4, R5);
-// multipush (R7);
-// R1 = GET_FREE_PAGE;
-// call MEMORY_MANAGER;
-// multipop (R7);
-// [newPageTable + 16] = R0;
-// [newPageTable + 17] = [PTBR + 17];
-// multipush (R7);
-// R1 = GET_FREE_PAGE;
-// call MEMORY_MANAGER;
-// multipop (R7);
-// [newPageTable + 18] = R0;
-// [newPageTable + 19] = [PTBR + 19];
-// multipop (R0, R1, R2, R3, R4, R5);
-
-// // Copy stack
-// alias spIndex R6;
-// spIndex = 4096;
-// while (spIndex <= userSP) do
-//     [[newPageTable + 2 * (spIndex / 512)] * 512 + (spIndex % 512)] = [[PTBR + 2 * (spIndex / 512)] * 512 + (spIndex % 512)];
-//     spIndex = spIndex + 1;
-// endwhile;
-
-// // Store BP
-// [[newProcessTable + 11] * 512] = BP;
-
-// // Return value
-// [returnAddress] = newPID;
-// [[newPageTable + 2 * ((userSP - 1)/512)] * 512 + (userSP - 1) % 512] = 0;
-
-// [currentProcessTable + 9] = 0;
-// SP = [currentProcessTable + 13];
-// ireturn;
-
-alias parent_process_table_entry R0;
-alias userSP R1;
-alias parentPID R2;
-alias childPID R3;
-alias physicalPageNum R4;
-alias offset R5;
-alias returnAddr R6;
-alias childStack1 R7;
-alias childStack2 R8;
-alias childUAP R9;
-alias child_process_table_entry R10;
-alias childPTBR R11;
-alias temp1 R12;
-alias temp2 R13;
-alias i R14;
-alias resource_table_entry R15;
-
-// FORK System Call
-
-parentPID = [SYSTEM_STATUS_TABLE + 1];
-parent_process_table_entry = PROCESS_TABLE + (parentPID * 16);
-
+// MODE and Kernel stack
 userSP = SP;
-[parent_process_table_entry + 9] = 8;
-[parent_process_table_entry + 13] = SP;
-SP = [parent_process_table_entry + 11] * 512 - 1;
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+currentProcessTable = PROCESS_TABLE + (currentPID * 16);
+[currentProcessTable + 13] = SP;
+SP = [currentProcessTable + 11] * 512 - 1;
+[currentProcessTable + 9] = INT_FORK;
 
-physicalPageNum = [PTBR + 2 * ((userSP - 1) / 512)];
-offset = (userSP - 1) % 512;
-returnAddr = physicalPageNum * 512 + offset;
-
-multipush(R0, R1, R2, R6);
-
+alias newPID R3;
+alias newProcessTable R4;
+multipush (R0, R1, R2);
 R1 = GET_PCB_ENTRY;
 call PROCESS_MANAGER;
+newPID = R0;
+newProcessTable = PROCESS_TABLE + (newPID * 16);
+multipop (R0, R1, R2);
 
-childPID = R0;
+alias returnAddress R5;
+returnAddress = [PTBR + 2 * ((userSP - 1)/512)] * 512 + (userSP - 1) % 512;
 
-multipop(R0, R1, R2, R6);
-
-if(childPID == -1) then
-	[returnAddr] = -1;
-	[parent_process_table_entry + 9] = 0;
-	SP = userSP;
-	ireturn;
+if (newPID == -1) then
+    [returnAddress] = -1;
+    [currentProcessTable + 9] = 0;
+    SP = [currentProcessTable + 13];
+    ireturn;
 endif;
 
-// Assign heap if the parent process hasn't been allocated yet
+// Load heap of parent
+if ([PTBR + (2 * 2) + 1] == "0000") then
+    multipush (R0, R1, R2, R3, R4, R5);
 
-multipush(R0, R1, R2, R3, R6);
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
 
-if([PTBR + 5] == "0000" && [PTBR + 7] == "0000") then
-	R1 = GET_FREE_PAGE;
-	call MEMORY_MANAGER;
-	[PTBR + 4] = R0;
-	[PTBR + 5] = "0110";
-	
-	R1 = GET_FREE_PAGE;
-	call MEMORY_MANAGER;
-	[PTBR + 6] = R0;
-	[PTBR + 7] = "0110";
+    [PTBR + 4] = R0;
+    [PTBR + 5] = "1110";
+
+    R1 = GET_FREE_PAGE;
+    call MEMORY_MANAGER;
+
+    [PTBR + 6] = R0;
+    [PTBR + 7] = "1110";
+
+    multipop(R0, R1, R2, R3, R4, R5);
 endif;
 
-// Acquire free pages for child's stacks and user area page
+[newProcessTable + 3] = [currentProcessTable + 3];
+[newProcessTable + 6] = [currentProcessTable + 6];
+[newProcessTable + 10] = [currentProcessTable + 10];
+[newProcessTable + 7] = [currentProcessTable + 7]; // INODE inedx if process from shell
+[newProcessTable + 13] = [currentProcessTable + 13];
 
+[newProcessTable + 9] = 0;
+[newProcessTable + 12] = 0;
+[newProcessTable] = 0;
+[newProcessTable + 2] = currentPID;
+[newProcessTable + 4] = CREATED;
+
+// UAPage
+multipush (R0, R1, R2, R3, R4, R5);
 R1 = GET_FREE_PAGE;
 call MEMORY_MANAGER;
-childStack1 = R0;
+[newProcessTable + 11] = R0;
+multipop (R0, R1, R2, R3, R4, R5);
 
-multipush(R7);
+// Per process table
+alias index R6;
+alias childResourceTable R7;
+alias parentResourceTable R8;
+index = 0;
+childResourceTable = [newProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+parentResourceTable = [currentProcessTable + 11] * 512 + RESOURCE_TABLE_OFFSET;
+while (index < 8) do
+    [childResourceTable + 2 * index] = [parentResourceTable + 2 * index];
+    [childResourceTable + 2 * index + 1] = [parentResourceTable + 2 * index + 1];
+    // If semaphore increment PROCESS COUNT in Semaphore Table
+    if ([childResourceTable + 2 * index] == SEMAPHORE) then
+        [SEMAPHORE_TABLE + 4 * [childResourceTable + 2 * index + 1] + 1] = [SEMAPHORE_TABLE + 4 * [childResourceTable + 2 * index + 1] + 1] + 1;
+    else
+    // If file, increment OPEN INSTANCE COUNT in Open File Table entry
+        if ([childResourceTable + 2 * index] == FILE) then
+            [OPEN_FILE_TABLE + 4 * [childResourceTable + 2 * index + 1] + 1] = [OPEN_FILE_TABLE + 4 * [childResourceTable + 2 * index + 1] + 1] + 1;
+        endif;
+    endif;
+    index = index + 1;
+endwhile;
 
+// Disk map table, rest have to be made invalid
+index = 2;
+while (index < 10) do
+    [DISK_MAP_TABLE + (newPID * 10) + index] = [DISK_MAP_TABLE + (currentPID * 10) + index];
+    index = index + 1;
+endwhile;
+
+// Page table
+alias newPageTable R7;
+newPageTable = PAGE_TABLE_BASE + (newPID * 20);
+[newPageTable] = 63;
+[newPageTable + 1] = "0100";
+[newPageTable + 2] = 64;
+[newPageTable + 3] = "0100";
+
+index = 2;
+while (index < 8) do
+    [newPageTable + (2 *index)] = [PTBR + (2 * index)];
+    [MEMORY_FREE_LIST + [PTBR + (2 * index)]] = [MEMORY_FREE_LIST + [PTBR + (2 * index)]] + 1;
+    [newPageTable + (2 *index) + 1] = [PTBR + (2 * index) + 1];
+    index = index + 1;
+endwhile;
+
+multipush (R0, R1, R2, R3, R4, R5);
+multipush (R7);
 R1 = GET_FREE_PAGE;
 call MEMORY_MANAGER;
-childStack2 = R0;
-
-multipush(R8);
-
+multipop (R7);
+[newPageTable + 16] = R0;
+[newPageTable + 17] = [PTBR + 17];
+multipush (R7);
 R1 = GET_FREE_PAGE;
 call MEMORY_MANAGER;
-childUAP = R0;
+multipop (R7);
+[newPageTable + 18] = R0;
+[newPageTable + 19] = [PTBR + 19];
+multipop (R0, R1, R2, R3, R4, R5);
 
-multipop(R7, R8);
-
-multipop(R0, R1, R2, R3, R6);
-
-// Set up process table of the child process
-
-child_process_table_entry = PROCESS_TABLE + (childPID * 16);
-
-[child_process_table_entry + 3] = [parent_process_table_entry + 3];
-[child_process_table_entry + 6] = [parent_process_table_entry + 6];
-[child_process_table_entry + 7] = [parent_process_table_entry + 7];
-[child_process_table_entry + 10] = [parent_process_table_entry + 10];
-[child_process_table_entry + 13] = [parent_process_table_entry + 13];
-
-[child_process_table_entry + 0] = 0;
-[child_process_table_entry + 2] = [parent_process_table_entry + 1];
-[child_process_table_entry + 4] = CREATED;
-[child_process_table_entry + 9] = 0;
-[child_process_table_entry + 11] = childUAP;
-[child_process_table_entry + 12] = 0;
-// (PID, PTBR, PTLR fields of the child's process table are initialized by GET_PCB_ENTRY)
-
-// initializing per-process Resource Table of child - (last 16 words of User Area Page)
-
-temp1 = childUAP * 512 + 496;
-temp2 = [parent_process_table_entry + 11] * 512 + 496;
-i = 0;
-while(i < 8) do
-	[temp1] = [temp2];
-	[temp1 + 1] = [temp2 + 1];
-	if([temp1] == FILE) then
-		resource_table_entry = OPEN_FILE_TABLE + ([temp1 + 1] * 4);
-		[resource_table_entry + 1] = [resource_table_entry + 1] + 1;
-	endif;
-	if([temp1] == SEMAPHORE) then
-		resource_table_entry = SEMAPHORE_TABLE + ([temp1 + 1] * 4);
-		[resource_table_entry + 1] = [resource_table_entry + 1] + 1;
-	endif;
-	temp1 = temp1 + 2;
-	temp2 = temp2 + 2;
-	i = i + 1;
+// Copy stack
+alias spIndex R6;
+spIndex = 4096;
+while (spIndex <= userSP) do
+    [[newPageTable + 2 * (spIndex / 512)] * 512 + (spIndex % 512)] = [[PTBR + 2 * (spIndex / 512)] * 512 + (spIndex % 512)];
+    spIndex = spIndex + 1;
 endwhile;
 
-// initializing per-process Disk Map table of child
+// Store BP
+[[newProcessTable + 11] * 512] = BP;
 
-temp1 = DISK_MAP_TABLE + (childPID * 10);
-temp2 = DISK_MAP_TABLE + (parentPID * 10);
-i = 0;
-while(i < 10) do
-	[temp1] = [temp2];
-	temp1 = temp1 + 1;
-	temp2 = temp2 + 1;
-	i = i + 1;
-endwhile;
+// Return value
+[returnAddress] = newPID;
+[[newPageTable + 2 * ((userSP - 1)/512)] * 512 + (userSP - 1) % 512] = 0;
 
-// setting up Page Table for the child process
-
-childPTBR = [child_process_table_entry + 14];
-i = 0;
-
-while(i < 16) do
-	[childPTBR + i] = [PTBR + i];
-	[childPTBR + i + 1] = [PTBR + i + 1]; 
-	if([PTBR + i + 1] != "0000") then
-		temp1 = [PTBR + i];
-		[MEMORY_FREE_LIST + temp1] = [MEMORY_FREE_LIST + temp1] + 1;
-	endif;
-	i = i + 2;
-endwhile;
-
-[childPTBR + 16] = childStack1;
-[childPTBR + 17] = "0110";
-[childPTBR + 18] = childStack2;
-[childPTBR + 19] = "0110";
-
-// setting up user stack of the child process
-
-if(userSP >= 9*512) then
-	i = 511;
-else
-	i = userSP % 512;
-endif;
-temp1 = childStack1 * 512;
-temp2 = [PTBR + 16] * 512;
-while(i >= 0) do
-	[temp1] = [temp2];
-	temp1 = temp1 + 1;
-	temp2 = temp2 + 1;
-	i = i - 1;
-endwhile;
-
-if(userSP >= 9*512) then
-	i = userSP % 512;
-	temp1 = childStack2 * 512;
-	temp2 = [PTBR + 18] * 512;
-	while(i >= 0) do
-		[temp1] = [temp2];
-		temp1 = temp1 + 1;
-		temp2 = temp2 + 1;
-		i = i - 1;
-	endwhile;
-endif;
-
-[childUAP * 512] = BP;		// pushing BP on top of child kernel stack
-
-[returnAddr] = childPID; 	// return value to parent process
-
-physicalPageNum = [childPTBR + 2 * ((userSP - 1) / 512)];
-offset = (userSP - 1) % 512;
-returnAddr = physicalPageNum * 512 + offset;
-
-[returnAddr] = 0;		// return value to child process
-
-[parent_process_table_entry + 9] = 0;
-SP = userSP;
-
+[currentProcessTable + 9] = 0;
+SP = [currentProcessTable + 13];
 ireturn;
-
-
-
