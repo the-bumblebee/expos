@@ -37,5 +37,6 @@ cd ../expl/
 ./expl ~/expos-roadmap/stage26/expl_progs/cp.expl
 ./expl ~/expos-roadmap/stage26/expl_progs/rm.expl
 ./expl ~/expos-roadmap/stage26/expl_progs/lu.expl
+./expl ~/expos-roadmap/stage26/expl_progs/ru.expl
 cd ../xfs-interface/
 ./xfs-interface run ~/expos-roadmap/stage26/batch-xfs

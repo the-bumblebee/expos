@@ -35,4 +35,5 @@ load --exec $HOME/expos-roadmap/stage26/expl_progs/cat.xsm
 load --exec $HOME/expos-roadmap/stage26/expl_progs/cp.xsm
 load --exec $HOME/expos-roadmap/stage26/expl_progs/rm.xsm
 load --exec $HOME/expos-roadmap/stage26/expl_progs/lu.xsm
+load --exec $HOME/expos-roadmap/stage26/expl_progs/ru.xsm
 load --data $HOME/expos-roadmap/stage26/data.dat

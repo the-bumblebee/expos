@@ -1,0 +1,39 @@
+int main()
+{
+    decl
+        int temp, root, uid, itr, count;
+        str username, filename, userfield;
+    enddecl
+
+    begin
+        temp = exposcall ("Write", -2, "Username>");
+        temp = exposcall ("Read", -1, username);
+        uid = exposcall ("Getuid", username);
+        if (uid < 0) then
+            temp = exposcall ("Write", -2, "INVALID USER");
+        else
+            root = exposcall ("Open", "root");
+            itr = 0;
+            count = 0;
+            temp = exposcall ("Write", -2, "DELETING");
+            while (itr < 60) do
+                temp = exposcall ("Read", root, filename);
+                temp = exposcall ("Seek", root, 2);
+                temp = exposcall ("Read", root, userfield);
+                temp = exposcall ("Seek", root, 4);
+                if (filename != "-1") then
+                    if (userfield == username) then
+                        temp = exposcall ("Delete", filename);
+                        if (temp < 0) then
+                            count = count + 1;
+                        endif;
+                    endif;
+                endif;
+                itr = itr + 1;
+            endwhile;
+            temp = exposcall ("Write", -2, count);
+            temp = exposcall ("Write", -2, "^FILES REMAIN");
+        endif;
+    return 0;
+    end
+}
