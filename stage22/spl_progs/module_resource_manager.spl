@@ -117,7 +117,7 @@ ReleaseSemaphore:
         [SEMAPHORE_TABLE + 4 * semTableIndex] = -1;
         R4 = 1;
         while (R4 < 16) do
-            if ([PROCESS_TABLE + (16 * R4) + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + (2 * R4) + 5] == semTableIndex) then
+            if ([PROCESS_TABLE + (16 * R4) + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + (16 * R4) + 5] == semTableIndex) then
                 [PROCESS_TABLE + (16 * R4) + 4] = READY;
             endif;
             R4 = R4 + 1;
